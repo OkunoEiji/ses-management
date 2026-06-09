@@ -1,0 +1,22 @@
+{
+	"$schema": "./node_modules/wrangler/config-schema.json",
+	"name": "ses-management",
+	"compatibility_date": "2026-06-01",
+	"compatibility_flags": [
+		"nodejs_als"
+	],
+	"main": ".svelte-kit/cloudflare/_worker.js",
+	"assets": {
+		"binding": "ASSETS",
+		"directory": ".svelte-kit/cloudflare"
+	},
+	"workers_dev": true,
+	"preview_urls": true,
+	"d1_databases": [
+		{
+			"binding": "ses_management",
+			"database_name": "ses-management",
+			"database_id": "9c63e7d0-2721-4c26-aecf-6be9133249fe"
+		}
+	]
+}
