@@ -1,6 +1,11 @@
 <script lang="ts">
 	import type { InvoicePreviewData } from '$lib/mock/invoice-utils';
-	import { buildInvoiceLineRows, resolveDueDate } from '$lib/mock/invoice-utils';
+	import {
+		buildInvoiceLineRows,
+		INVOICE_PREVIEW_PAGE_HEIGHT_PX,
+		INVOICE_PREVIEW_PAGE_WIDTH_PX,
+		resolveDueDate
+	} from '$lib/mock/invoice-utils';
 	import { parseDateOnly, today } from '$lib/utils';
 
 	let {
@@ -13,14 +18,14 @@
 
 	const lineRows = $derived(buildInvoiceLineRows(invoice));
 
-	const pageW = '794px';
+	const pageW = `${INVOICE_PREVIEW_PAGE_WIDTH_PX}px`;
 	const border = '1px solid #000';
 	const headBg = '#bdd7ee';
 	const stripeBg = '#f0f7ff';
 
 	const rootStyle = [
 		`width:${pageW}`,
-		'min-height:1123px',
+		`min-height:${INVOICE_PREVIEW_PAGE_HEIGHT_PX}px`,
 		`padding:28px 36px 36px`,
 		'background:#fff',
 		"font-family:'Noto Sans JP','Hiragino Sans','Meiryo',sans-serif",

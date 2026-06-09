@@ -126,5 +126,30 @@
 	}
 	html {
 		@apply font-sans;
+		scrollbar-gutter: stable;
+	}
+}
+
+@layer components {
+	.app-main {
+		scrollbar-gutter: stable;
+	}
+
+	.document-form-page {
+		height: 100%;
+		max-height: 100%;
+		overflow: hidden;
+	}
+
+	.document-form-columns {
+		min-height: 0;
+	}
+
+	.document-form-fields {
+		height: 100%;
+		min-width: 0;
+		overflow-y: scroll;
+		overscroll-behavior: contain;
+		scrollbar-gutter: stable;
 	}
 }

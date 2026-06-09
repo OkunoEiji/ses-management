@@ -59,6 +59,15 @@ export type InvoicePreviewData = InvoiceDisplay & {
 /** 明細 tbody の行数（ヘッダー行を除く） */
 export const INVOICE_TABLE_ROW_COUNT = 15;
 
+/** 請求書プレビュー用紙の幅（px） */
+export const INVOICE_PREVIEW_PAGE_WIDTH_PX = 794;
+
+/** 請求書プレビュー用紙の高さ（px・A4相当） */
+export const INVOICE_PREVIEW_PAGE_HEIGHT_PX = 1123;
+
+/** プレビュー枠（border 1px×2 + padding 16px×2）込みの外側幅 */
+export const INVOICE_PREVIEW_PANEL_WIDTH_PX = INVOICE_PREVIEW_PAGE_WIDTH_PX + 34;
+
 export function billingMonthLabel(billingMonth: string): string {
 	const [y, m] = billingMonth.split('-');
 	if (!y || !m) return billingMonth;

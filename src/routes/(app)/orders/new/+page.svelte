@@ -74,18 +74,17 @@
 	}
 </script>
 
-<div class="space-y-6 p-6">
-	<div class="flex items-center gap-3">
-		<Button variant="ghost" size="icon" onclick={() => history.back()}>
-			<ArrowLeft class="h-5 w-5" />
+<div class="document-form-page flex h-full min-h-0 flex-col overflow-hidden p-3">
+	<header class="flex shrink-0 items-center gap-2 border-b border-border pb-2">
+		<Button variant="ghost" size="icon" class="h-7 w-7" onclick={() => history.back()}>
+			<ArrowLeft class="h-4 w-4" />
 		</Button>
-		<div>
-			<h1 class="text-2xl font-bold tracking-tight">注文書作成</h1>
-			<p class="mt-1 text-sm text-muted-foreground">注文書・見積書の内容を入力してください</p>
-		</div>
-	</div>
+		<h1 class="text-base font-bold tracking-tight">注文書作成</h1>
+	</header>
 
-	{#key `${prefillEngineerId}-${prefillProjectId}`}
-		<OrderForm initialData={initialData} onSubmit={handleSubmit} {isSubmitting} submitLabel="作成する" />
-	{/key}
+	<div class="min-h-0 flex-1 pt-2">
+		{#key `${prefillEngineerId}-${prefillProjectId}`}
+			<OrderForm initialData={initialData} onSubmit={handleSubmit} {isSubmitting} submitLabel="作成する" />
+		{/key}
+	</div>
 </div>

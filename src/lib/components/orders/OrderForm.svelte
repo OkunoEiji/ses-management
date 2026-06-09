@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { Input } from '$lib/components/ui/input';
 	import { Button } from '$lib/components/ui/button';
-	import * as Card from '$lib/components/ui/card';
 	import type {
 		Order,
 		OrderStatus,
@@ -15,9 +14,17 @@
 		NOTES_DEFAULT,
 		generateOrderNumber,
 		calcRates,
-		calcOrderAmounts
+		calcOrderAmounts,
+		ORDER_PREVIEW_PAGE_HEIGHT_PX,
+		ORDER_PREVIEW_PAGE_WIDTH_PX,
+		toOrderPreview
 	} from '$lib/mock/order-utils';
+	import OrderPreview from '$lib/components/orders/OrderPreview.svelte';
+	import CollapsibleFormCard from '$lib/components/ui/CollapsibleFormCard.svelte';
 	import { today } from '$lib/utils';
+
+	const previewPageWidth = `${ORDER_PREVIEW_PAGE_WIDTH_PX}px`;
+	const previewPageHeight = `${ORDER_PREVIEW_PAGE_HEIGHT_PX}px`;
 
 	let {
 		initialData = {},
@@ -98,19 +105,54 @@
 	let deliverable = $state(init.deliverable);
 	let status = $state<OrderStatus>(init.status);
 	let notes = $state(init.notes);
+	let previewMode = $state<'estimate' | 'order'>('estimate');
+	let cardsOpen = $state({
+		doc: true,
+		party: true,
+		amount: true,
+		contract: true,
+		notes: true
+	});
 
 	const selectClass =
-		'mt-1 flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-xs';
-	const textareaClass = selectClass + ' min-h-24 py-2';
-	const labelClass = 'text-sm font-medium';
+		'mt-0.5 flex h-7 w-full rounded-md border border-input bg-background px-2 py-0 text-xs shadow-xs';
+	const textareaClass = selectClass + ' min-h-[2rem] resize-none py-1 leading-snug';
+	const labelClass = 'text-[11px] font-medium leading-none';
+	const cardContentClass = 'px-3 py-1.5';
 
-	const unitPriceNum = $derived(parseFloat(unit_price) || 0);
-	const monthsNum = $derived(parseFloat(months) || 1);
-	const amounts = $derived(calcOrderAmounts(unitPriceNum, monthsNum));
-
-	function fmtNum(n: number): string {
-		return n.toLocaleString();
-	}
+	const livePreview = $derived.by(() =>
+		toOrderPreview({
+			id: initialData.id ?? 'draft',
+			order_number: emptyToNull(order_number),
+			order_type,
+			issue_date: issue_date.trim() || today(),
+			project_id: emptyToNull(project_id),
+			project_name: project_name.trim() || 'SES業務委託費',
+			engineer_id: emptyToNull(engineer_id),
+			engineer_name: emptyToNull(engineer_name),
+			client_company: client_company.trim() || '（宛先未入力）',
+			engineer_affiliation_company: emptyToNull(engineer_affiliation_company),
+			engineer_parent_company: emptyToNull(engineer_parent_company),
+			unit_price: parseFloat(unit_price) || 0,
+			months: parseFloat(months) || 1,
+			period_start: emptyToNull(period_start),
+			period_end: emptyToNull(period_end),
+			standard_hours_min: parseFloat(standard_hours_min) || 140,
+			standard_hours_max: parseFloat(standard_hours_max) || 180,
+			overtime_rate: numOrUndefined(overtime_rate) ?? 0,
+			deduction_rate: numOrUndefined(deduction_rate) ?? 0,
+			cost_unit_price: numOrUndefined(cost_unit_price) ?? 0,
+			cost_deduction_rate: numOrUndefined(cost_deduction_rate) ?? 0,
+			cost_overtime_rate: numOrUndefined(cost_overtime_rate) ?? 0,
+			contract_type,
+			settlement_unit: emptyToNull(settlement_unit),
+			transportation,
+			deliverable: emptyToNull(deliverable),
+			status,
+			notes: emptyToNull(notes),
+			created_at: initialData.created_at
+		})
+	);
 
 	function emptyToNull(value: string): string | null {
 		return value.trim() ? value.trim() : null;
@@ -247,314 +289,324 @@
 	}
 </script>
 
-<form class="max-w-3xl space-y-6" onsubmit={handleSubmit}>
-	<!-- 書類情報 -->
-	<Card.Root>
-		<Card.Header class="pb-4">
-			<Card.Title class="text-base">書類情報</Card.Title>
-		</Card.Header>
-		<Card.Content class="grid grid-cols-1 gap-4 md:grid-cols-2">
-			<div>
-				<label class={labelClass} for="order_type">書類種別</label>
-				<select
-					id="order_type"
-					class={selectClass}
-					value={order_type}
-					onchange={(e) => onOrderTypeChange(e.currentTarget.value as OrderType)}
-				>
-					<option value="注文書">注文書</option>
-					<option value="注文請書">注文請書</option>
-				</select>
-			</div>
-			<div>
-				<label class={labelClass} for="order_number">書類番号</label>
-				<Input id="order_number" bind:value={order_number} class="mt-1" />
-			</div>
-			<div>
-				<label class={labelClass} for="issue_date">
-					発行日 <span class="text-destructive">*</span>
-				</label>
-				<Input id="issue_date" type="date" bind:value={issue_date} required class="mt-1" />
-			</div>
-			<div>
-				<label class={labelClass} for="status">ステータス</label>
-				<select id="status" class={selectClass} bind:value={status}>
-					<option value="下書き">下書き</option>
-					<option value="送付済み">送付済み</option>
-					<option value="承認済み">承認済み</option>
-				</select>
-			</div>
-		</Card.Content>
-	</Card.Root>
-
-	<!-- 注文先・案件・要員 -->
-	<Card.Root>
-		<Card.Header class="pb-4">
-			<Card.Title class="text-base">注文先・案件・要員</Card.Title>
-		</Card.Header>
-		<Card.Content class="grid grid-cols-1 gap-4 md:grid-cols-2">
-			<div>
-				<label class={labelClass} for="project_id">案件から入力</label>
-				<select
-					id="project_id"
-					class={selectClass}
-					value={project_id}
-					onchange={(e) => onProjectChange(e.currentTarget.value)}
-				>
-					<option value="">案件を選択</option>
-					{#each projects as proj (proj.id)}
-						<option value={proj.id}>{proj.name}</option>
-					{/each}
-				</select>
-			</div>
-			<div>
-				<label class={labelClass} for="engineer_id">要員から入力</label>
-				<select
-					id="engineer_id"
-					class={selectClass}
-					value={engineer_id}
-					onchange={(e) => onEngineerChange(e.currentTarget.value)}
-				>
-					<option value="">要員を選択（レート自動入力）</option>
-					{#each engineers as eng (eng.id)}
-						<option value={eng.id}>{eng.name}</option>
-					{/each}
-				</select>
-			</div>
-			<div class="md:col-span-2">
-				<label class={labelClass} for="project_name">案件名</label>
-				<Input id="project_name" bind:value={project_name} class="mt-1" />
-			</div>
-			<div class="md:col-span-2">
-				<label class={labelClass} for="client_company">
-					上位会社（見積書の宛先） <span class="text-destructive">*</span>
-				</label>
-				<Input
-					id="client_company"
-					bind:value={client_company}
-					required
-					class="mt-1"
-					placeholder="上位会社・エンドユーザー"
-				/>
-			</div>
-			<div class="md:col-span-2">
-				<label class={labelClass} for="engineer_affiliation_company">所属会社（注文書の宛先）</label>
-				<Input
-					id="engineer_affiliation_company"
-					bind:value={engineer_affiliation_company}
-					class="mt-1"
-					placeholder="要員の所属会社（BP等）"
-				/>
-			</div>
-			<div>
-				<label class={labelClass} for="engineer_name">要員名</label>
-				<Input id="engineer_name" bind:value={engineer_name} class="mt-1" />
-			</div>
-			<div>
-				<label class={labelClass} for="engineer_parent_company">上位会社名（補足）</label>
-				<Input
-					id="engineer_parent_company"
-					bind:value={engineer_parent_company}
-					class="mt-1"
-					placeholder="エンドユーザー名"
-				/>
-			</div>
-		</Card.Content>
-	</Card.Root>
-
-	<!-- 注文内容・金額 -->
-	<Card.Root>
-		<Card.Header class="pb-4">
-			<Card.Title class="text-base">注文内容・金額</Card.Title>
-		</Card.Header>
-		<Card.Content class="space-y-4">
-			<div class="grid grid-cols-1 gap-4 md:grid-cols-3">
-				<div>
-					<label class={labelClass} for="unit_price">単価（万円/月）</label>
-					<Input
-						id="unit_price"
-						type="number"
-						value={unit_price}
-						oninput={(e) => onBillingUnitPriceInput(e.currentTarget.value)}
-						class="mt-1"
-						placeholder="例：56"
-					/>
-				</div>
-				<div>
-					<label class={labelClass} for="months">月数</label>
-					<Input id="months" type="number" bind:value={months} min="1" class="mt-1" />
-				</div>
-			</div>
-
-			<div class="grid grid-cols-1 gap-4 md:grid-cols-2">
-				<div>
-					<label class={labelClass} for="period_start">期間 開始日</label>
-					<Input id="period_start" type="date" bind:value={period_start} class="mt-1" />
-				</div>
-				<div>
-					<label class={labelClass} for="period_end">期間 終了日</label>
-					<Input id="period_end" type="date" bind:value={period_end} class="mt-1" />
-				</div>
-			</div>
-
-			<div class="grid grid-cols-2 gap-4">
-				<div>
-					<label class={labelClass} for="standard_hours_min">基準時間 下限（h）</label>
-					<Input
-						id="standard_hours_min"
-						type="number"
-						value={standard_hours_min}
-						oninput={(e) => onBillingHoursInput('standard_hours_min', e.currentTarget.value)}
-						class="mt-1"
-					/>
-				</div>
-				<div>
-					<label class={labelClass} for="standard_hours_max">基準時間 上限（h）</label>
-					<Input
-						id="standard_hours_max"
-						type="number"
-						value={standard_hours_max}
-						oninput={(e) => onBillingHoursInput('standard_hours_max', e.currentTarget.value)}
-						class="mt-1"
-					/>
-				</div>
-				<div>
-					<label class={labelClass} for="overtime_rate">
-						超過単価（円/h）
-						<span class="ml-1 text-xs text-muted-foreground">自動計算（手動修正可）</span>
-					</label>
-					<Input
-						id="overtime_rate"
-						type="number"
-						bind:value={overtime_rate}
-						class="mt-1"
-						placeholder="単価÷上限h（10円切捨）"
-					/>
-				</div>
-				<div>
-					<label class={labelClass} for="deduction_rate">
-						控除単価（円/h）
-						<span class="ml-1 text-xs text-muted-foreground">自動計算（手動修正可）</span>
-					</label>
-					<Input
-						id="deduction_rate"
-						type="number"
-						bind:value={deduction_rate}
-						class="mt-1"
-						placeholder="単価÷下限h（10円切捨）"
-					/>
-				</div>
-			</div>
-
-			<div class="mt-2 border-t pt-4">
-				<p class="mb-3 text-sm font-medium text-muted-foreground">支払条件（所属会社への支払）</p>
-				<div class="grid grid-cols-1 gap-4 md:grid-cols-3">
+<form
+	class="order-form-screen flex h-full min-h-0 w-full flex-col"
+	style="--order-page-width: {previewPageWidth}; --order-page-height: {previewPageHeight}"
+	onsubmit={handleSubmit}
+>
+	<div class="document-form-columns min-h-0 flex-1 grid grid-cols-1 gap-2 xl:grid-cols-2 xl:gap-3">
+		<div class="min-h-0 min-w-0 xl:h-full">
+			<div class="document-form-fields">
+			<div class="space-y-1 pb-1">
+			<CollapsibleFormCard title="書類情報" bind:open={cardsOpen.doc} contentClass={`${cardContentClass} grid grid-cols-2 gap-x-2 gap-y-1.5 xl:grid-cols-4`}>
 					<div>
-						<label class={labelClass} for="cost_unit_price">支払単価（万円/月）</label>
+						<label class={labelClass} for="order_type">書類種別</label>
+						<select
+							id="order_type"
+							class={selectClass}
+							value={order_type}
+							onchange={(e) => onOrderTypeChange(e.currentTarget.value as OrderType)}
+						>
+							<option value="注文書">注文書</option>
+							<option value="注文請書">注文請書</option>
+						</select>
+					</div>
+					<div>
+						<label class={labelClass} for="order_number">書類番号</label>
+						<Input id="order_number" bind:value={order_number} class="mt-0.5 h-7 text-xs" />
+					</div>
+					<div>
+						<label class={labelClass} for="issue_date">
+							発行日 <span class="text-destructive">*</span>
+						</label>
 						<Input
-							id="cost_unit_price"
-							type="number"
-							value={cost_unit_price}
-							oninput={(e) => onCostUnitPriceInput(e.currentTarget.value)}
-							class="mt-1"
-							placeholder="例：50"
+							id="issue_date"
+							type="date"
+							bind:value={issue_date}
+							required
+							class="mt-0.5 h-7 text-xs"
 						/>
 					</div>
 					<div>
-						<label class={labelClass} for="cost_deduction_rate">支払控除単価（円/h）</label>
+						<label class={labelClass} for="status">ステータス</label>
+						<select id="status" class={selectClass} bind:value={status}>
+							<option value="下書き">下書き</option>
+							<option value="送付済み">送付済み</option>
+							<option value="承認済み">承認済み</option>
+						</select>
+					</div>
+			</CollapsibleFormCard>
+
+			<CollapsibleFormCard title="注文先・案件・要員" bind:open={cardsOpen.party} contentClass={`${cardContentClass} grid grid-cols-2 gap-x-2 gap-y-1.5`}>
+					<div>
+						<label class={labelClass} for="project_id">案件</label>
+						<select
+							id="project_id"
+							class={selectClass}
+							value={project_id}
+							onchange={(e) => onProjectChange(e.currentTarget.value)}
+						>
+							<option value="">案件を選択</option>
+							{#each projects as proj (proj.id)}
+								<option value={proj.id}>{proj.name}</option>
+							{/each}
+						</select>
+					</div>
+					<div>
+						<label class={labelClass} for="engineer_id">要員</label>
+						<select
+							id="engineer_id"
+							class={selectClass}
+							value={engineer_id}
+							onchange={(e) => onEngineerChange(e.currentTarget.value)}
+						>
+							<option value="">要員を選択</option>
+							{#each engineers as eng (eng.id)}
+								<option value={eng.id}>{eng.name}</option>
+							{/each}
+						</select>
+					</div>
+					<div class="col-span-2">
+						<label class={labelClass} for="project_name">案件名</label>
+						<Input id="project_name" bind:value={project_name} class="mt-0.5 h-7 text-xs" />
+					</div>
+					<div class="col-span-2">
+						<label class={labelClass} for="client_company">
+							上位会社（見積宛先） <span class="text-destructive">*</span>
+						</label>
 						<Input
-							id="cost_deduction_rate"
-							type="number"
-							bind:value={cost_deduction_rate}
-							class="mt-1"
-							placeholder="例：2500"
+							id="client_company"
+							bind:value={client_company}
+							required
+							class="mt-0.5 h-7 text-xs"
+							placeholder="上位会社・エンドユーザー"
+						/>
+					</div>
+					<div class="col-span-2">
+						<label class={labelClass} for="engineer_affiliation_company">所属会社（注文宛先）</label>
+						<Input
+							id="engineer_affiliation_company"
+							bind:value={engineer_affiliation_company}
+							class="mt-0.5 h-7 text-xs"
+							placeholder="要員の所属会社（BP等）"
 						/>
 					</div>
 					<div>
-						<label class={labelClass} for="cost_overtime_rate">支払超過単価（円/h）</label>
+						<label class={labelClass} for="engineer_name">要員名</label>
+						<Input id="engineer_name" bind:value={engineer_name} class="mt-0.5 h-7 text-xs" />
+					</div>
+					<div>
+						<label class={labelClass} for="engineer_parent_company">上位会社（補足）</label>
 						<Input
-							id="cost_overtime_rate"
-							type="number"
-							bind:value={cost_overtime_rate}
-							class="mt-1"
-							placeholder="例：3000"
+							id="engineer_parent_company"
+							bind:value={engineer_parent_company}
+							class="mt-0.5 h-7 text-xs"
 						/>
+					</div>
+			</CollapsibleFormCard>
+
+			<CollapsibleFormCard title="注文内容・金額" bind:open={cardsOpen.amount} contentClass={`${cardContentClass} space-y-1.5`}>
+					<div class="grid grid-cols-4 gap-x-2 gap-y-1.5">
+						<div>
+							<label class={labelClass} for="unit_price">請求単価（万円/月）</label>
+							<Input
+								id="unit_price"
+								type="number"
+								value={unit_price}
+								oninput={(e) => onBillingUnitPriceInput(e.currentTarget.value)}
+								class="mt-0.5 h-7 text-xs"
+							/>
+						</div>
+						<div>
+							<label class={labelClass} for="months">月数</label>
+							<Input id="months" type="number" bind:value={months} min="1" class="mt-0.5 h-7 text-xs" />
+						</div>
+						<div>
+							<label class={labelClass} for="period_start">期間 開始</label>
+							<Input
+								id="period_start"
+								type="date"
+								bind:value={period_start}
+								class="mt-0.5 h-7 text-xs"
+							/>
+						</div>
+						<div>
+							<label class={labelClass} for="period_end">期間 終了</label>
+							<Input id="period_end" type="date" bind:value={period_end} class="mt-0.5 h-7 text-xs" />
+						</div>
+					</div>
+
+					<div class="grid grid-cols-4 gap-x-2 gap-y-1.5">
+						<div>
+							<label class={labelClass} for="standard_hours_min">基準 下限（h）</label>
+							<Input
+								id="standard_hours_min"
+								type="number"
+								value={standard_hours_min}
+								oninput={(e) => onBillingHoursInput('standard_hours_min', e.currentTarget.value)}
+								class="mt-0.5 h-7 text-xs"
+							/>
+						</div>
+						<div>
+							<label class={labelClass} for="standard_hours_max">基準 上限（h）</label>
+							<Input
+								id="standard_hours_max"
+								type="number"
+								value={standard_hours_max}
+								oninput={(e) => onBillingHoursInput('standard_hours_max', e.currentTarget.value)}
+								class="mt-0.5 h-7 text-xs"
+							/>
+						</div>
+						<div>
+							<label class={labelClass} for="deduction_rate">控除単価（円/h）</label>
+							<Input
+								id="deduction_rate"
+								type="number"
+								bind:value={deduction_rate}
+								class="mt-0.5 h-7 text-xs"
+							/>
+						</div>
+						<div>
+							<label class={labelClass} for="overtime_rate">超過単価（円/h）</label>
+							<Input
+								id="overtime_rate"
+								type="number"
+								bind:value={overtime_rate}
+								class="mt-0.5 h-7 text-xs"
+							/>
+						</div>
+					</div>
+
+					<div class="grid grid-cols-3 gap-x-2 gap-y-1.5 border-t border-border pt-1.5">
+						<div>
+							<label class={labelClass} for="cost_unit_price">支払単価（万円/月）</label>
+							<Input
+								id="cost_unit_price"
+								type="number"
+								value={cost_unit_price}
+								oninput={(e) => onCostUnitPriceInput(e.currentTarget.value)}
+								class="mt-0.5 h-7 text-xs"
+							/>
+						</div>
+						<div>
+							<label class={labelClass} for="cost_deduction_rate">支払控除（円/h）</label>
+							<Input
+								id="cost_deduction_rate"
+								type="number"
+								bind:value={cost_deduction_rate}
+								class="mt-0.5 h-7 text-xs"
+							/>
+						</div>
+						<div>
+							<label class={labelClass} for="cost_overtime_rate">支払超過（円/h）</label>
+							<Input
+								id="cost_overtime_rate"
+								type="number"
+								bind:value={cost_overtime_rate}
+								class="mt-0.5 h-7 text-xs"
+							/>
+						</div>
+					</div>
+			</CollapsibleFormCard>
+
+			<CollapsibleFormCard title="契約条件" bind:open={cardsOpen.contract} contentClass={`${cardContentClass} grid grid-cols-2 gap-x-2 gap-y-1.5 xl:grid-cols-4`}>
+					<div>
+						<label class={labelClass} for="contract_type">契約形態</label>
+						<select id="contract_type" class={selectClass} bind:value={contract_type}>
+							<option value="準委任">準委任</option>
+							<option value="派遣">派遣</option>
+						</select>
+					</div>
+					<div>
+						<label class={labelClass} for="settlement_unit">清算単位</label>
+						<Input id="settlement_unit" bind:value={settlement_unit} class="mt-0.5 h-7 text-xs" />
+					</div>
+					<div>
+						<label class={labelClass} for="transportation">交通費</label>
+						<select id="transportation" class={selectClass} bind:value={transportation}>
+							<option value="基本単価に含む">基本単価に含む</option>
+							<option value="別途精算">別途精算</option>
+						</select>
+					</div>
+					<div>
+						<label class={labelClass} for="deliverable">納品物</label>
+						<Input id="deliverable" bind:value={deliverable} class="mt-0.5 h-7 text-xs" />
+					</div>
+			</CollapsibleFormCard>
+
+			<CollapsibleFormCard title="特記事項" bind:open={cardsOpen.notes} contentClass={cardContentClass}>
+					<label class="sr-only" for="notes">特記事項</label>
+					<textarea id="notes" class={textareaClass} rows={2} bind:value={notes}></textarea>
+			</CollapsibleFormCard>
+			</div>
+			</div>
+		</div>
+
+		<aside class="flex min-h-0 min-w-0 flex-col overflow-hidden xl:h-full">
+			<div class="mb-0.5 flex shrink-0 gap-1">
+				<button
+					type="button"
+					class="rounded-md px-2 py-0.5 text-[11px] font-medium transition-colors {previewMode ===
+					'estimate'
+						? 'bg-primary text-primary-foreground'
+						: 'bg-muted text-muted-foreground hover:bg-muted/80'}"
+					onclick={() => (previewMode = 'estimate')}
+				>
+					見積書
+				</button>
+				<button
+					type="button"
+					class="rounded-md px-2 py-0.5 text-[11px] font-medium transition-colors {previewMode ===
+					'order'
+						? 'bg-primary text-primary-foreground'
+						: 'bg-muted text-muted-foreground hover:bg-muted/80'}"
+					onclick={() => (previewMode = 'order')}
+				>
+					注文書
+				</button>
+			</div>
+			<div
+				class="box-border min-h-0 flex-1 overflow-hidden rounded-lg border border-border bg-muted/30 p-1.5"
+			>
+				<div class="order-preview-scaler mx-auto">
+					<div class="order-preview-scaler-inner">
+						<OrderPreview order={livePreview} displayMode={previewMode} />
 					</div>
 				</div>
 			</div>
-
-			<div class="space-y-2 rounded-lg bg-muted/50 p-4 text-sm">
-				<div class="flex justify-between">
-					<span class="text-muted-foreground">単価 × {monthsNum}ヶ月</span>
-					<span>¥{fmtNum(amounts.amount_subtotal)}</span>
-				</div>
-				<div class="flex justify-between">
-					<span class="text-muted-foreground">消費税（10%）</span>
-					<span>¥{fmtNum(amounts.tax_amount)}</span>
-				</div>
-				<hr class="border-border" />
-				<div class="flex justify-between text-base font-bold">
-					<span>発注金額（税込）</span>
-					<span class="text-primary">¥{fmtNum(amounts.order_amount)}</span>
-				</div>
+			<div class="flex shrink-0 justify-end pt-1.5">
+				<Button type="submit" disabled={isSubmitting} size="sm" class="min-w-28">
+					{isSubmitting ? '保存中...' : submitLabel}
+				</Button>
 			</div>
-		</Card.Content>
-	</Card.Root>
-
-	<!-- 契約条件 -->
-	<Card.Root>
-		<Card.Header class="pb-4">
-			<Card.Title class="text-base">契約条件</Card.Title>
-		</Card.Header>
-		<Card.Content class="grid grid-cols-1 gap-4 md:grid-cols-2">
-			<div>
-				<label class={labelClass} for="contract_type">契約形態</label>
-				<select id="contract_type" class={selectClass} bind:value={contract_type}>
-					<option value="準委任">準委任</option>
-					<option value="派遣">派遣</option>
-				</select>
-			</div>
-			<div>
-				<label class={labelClass} for="settlement_unit">清算単位</label>
-				<Input id="settlement_unit" bind:value={settlement_unit} class="mt-1" />
-			</div>
-			<div>
-				<label class={labelClass} for="transportation">交通費</label>
-				<select id="transportation" class={selectClass} bind:value={transportation}>
-					<option value="基本単価に含む">基本単価に含む</option>
-					<option value="別途精算">別途精算</option>
-				</select>
-			</div>
-			<div>
-				<label class={labelClass} for="deliverable">納品物</label>
-				<Input id="deliverable" bind:value={deliverable} class="mt-1" />
-			</div>
-		</Card.Content>
-	</Card.Root>
-
-	<!-- 固定条件 -->
-	<Card.Root class="bg-muted/30">
-		<Card.Header class="pb-2">
-			<Card.Title class="text-sm text-muted-foreground">固定条件（全書類共通）</Card.Title>
-		</Card.Header>
-		<Card.Content class="text-sm text-muted-foreground">
-			<p>納入日：毎月末日　／　検収日：毎月末日　／　支払日：検収月の翌々月15日（45日サイト）</p>
-		</Card.Content>
-	</Card.Root>
-
-	<!-- 特記事項 -->
-	<Card.Root>
-		<Card.Header class="pb-4">
-			<Card.Title class="text-base">特記事項</Card.Title>
-		</Card.Header>
-		<Card.Content>
-			<textarea id="notes" class={textareaClass} rows={6} bind:value={notes}></textarea>
-		</Card.Content>
-	</Card.Root>
-
-	<div class="flex justify-end">
-		<Button type="submit" disabled={isSubmitting}>
-			{isSubmitting ? '保存中...' : submitLabel}
-		</Button>
+		</aside>
 	</div>
 </form>
+
+<style>
+	.order-form-screen {
+		--order-preview-chrome: 9rem;
+		--preview-scale: min(
+			1,
+			calc((100dvh - var(--order-preview-chrome)) / var(--order-page-height))
+		);
+	}
+
+	@media (min-width: 1280px) {
+		.order-form-screen {
+			--order-preview-chrome: 8rem;
+		}
+	}
+
+	.order-preview-scaler {
+		width: calc(var(--order-page-width) * var(--preview-scale));
+		height: calc(var(--order-page-height) * var(--preview-scale));
+		overflow: hidden;
+	}
+
+	.order-preview-scaler-inner {
+		width: var(--order-page-width);
+		transform: scale(var(--preview-scale));
+		transform-origin: top left;
+	}
+</style>

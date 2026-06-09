@@ -1,5 +1,10 @@
 <script lang="ts">
 	import type { Order } from '$lib/mock/orders';
+	import {
+		ORDER_PREVIEW_PAGE_HEIGHT_PX,
+		ORDER_PREVIEW_PAGE_WIDTH_PX,
+		resolveOrderPreviewRate
+	} from '$lib/mock/order-utils';
 	import { parseDateOnly } from '$lib/utils';
 	import { companySettings } from '$lib/stores/company-settings.svelte';
 
@@ -33,15 +38,19 @@
 
 	const displayUnitPrice = $derived.by(() => {
 		if (isEstimate) return (o.unit_price ?? 0) * 10_000;
-		return ((o.cost_unit_price ?? o.unit_price) ?? 0) * 10_000;
+		return resolveOrderPreviewRate(o.cost_unit_price, o.unit_price) * 10_000;
 	});
 
 	const displayOvertimeRate = $derived(
-		isEstimate ? (o.overtime_rate ?? 0) : (o.cost_overtime_rate ?? o.overtime_rate ?? 0)
+		isEstimate
+			? (o.overtime_rate ?? 0)
+			: resolveOrderPreviewRate(o.cost_overtime_rate, o.overtime_rate)
 	);
 
 	const displayDeductionRate = $derived(
-		isEstimate ? (o.deduction_rate ?? 0) : (o.cost_deduction_rate ?? o.deduction_rate ?? 0)
+		isEstimate
+			? (o.deduction_rate ?? 0)
+			: resolveOrderPreviewRate(o.cost_deduction_rate, o.deduction_rate)
 	);
 
 	const months = $derived(o.months ?? 1);
@@ -59,8 +68,16 @@
 		return `${s}-${e}`;
 	});
 
-	const rootStyle =
-		"width:794px;min-height:1123px;padding:36px 48px;background:#ffffff;font-family:'Noto Sans JP','Inter Variable',sans-serif;font-size:13px;color:#1a1a1a;box-sizing:border-box;";
+	const rootStyle = [
+		`width:${ORDER_PREVIEW_PAGE_WIDTH_PX}px`,
+		`min-height:${ORDER_PREVIEW_PAGE_HEIGHT_PX}px`,
+		"padding:36px 48px",
+		'background:#ffffff',
+		"font-family:'Noto Sans JP','Inter Variable',sans-serif",
+		'font-size:13px',
+		'color:#1a1a1a',
+		'box-sizing:border-box'
+	].join(';');
 
 	function fmtNum(n?: number | null): string {
 		return (n ?? 0).toLocaleString();
