@@ -13,7 +13,6 @@
 	import { projects } from '$lib/mock/projects';
 	import {
 		NOTES_DEFAULT,
-		DEFAULT_SENDER,
 		generateOrderNumber,
 		calcRates,
 		calcOrderAmounts
@@ -35,7 +34,7 @@
 	const isEdit = $derived(!!initialData.id);
 
 	function formStateFromOrder(data: Partial<Order> = {}) {
-		const merged = { ...DEFAULT_SENDER, notes: NOTES_DEFAULT, ...data };
+		const merged = { notes: NOTES_DEFAULT, ...data };
 		return {
 			order_number: merged.order_number ?? '',
 			order_type: (merged.order_type ?? '注文書') as OrderType,
@@ -47,11 +46,6 @@
 			client_company: merged.client_company ?? '',
 			engineer_affiliation_company: merged.engineer_affiliation_company ?? '',
 			engineer_parent_company: merged.engineer_parent_company ?? '',
-			sender_company: merged.sender_company ?? DEFAULT_SENDER.sender_company ?? '',
-			sender_registration_number:
-				merged.sender_registration_number ?? DEFAULT_SENDER.sender_registration_number ?? '',
-			sender_address: merged.sender_address ?? DEFAULT_SENDER.sender_address ?? '',
-			sender_signature: merged.sender_signature ?? DEFAULT_SENDER.sender_signature ?? '',
 			unit_price: merged.unit_price != null ? String(merged.unit_price) : '',
 			months: merged.months != null ? String(merged.months) : '1',
 			period_start: merged.period_start ?? '',
@@ -87,10 +81,6 @@
 	let client_company = $state(init.client_company);
 	let engineer_affiliation_company = $state(init.engineer_affiliation_company);
 	let engineer_parent_company = $state(init.engineer_parent_company);
-	let sender_company = $state(init.sender_company);
-	let sender_registration_number = $state(init.sender_registration_number);
-	let sender_address = $state(init.sender_address);
-	let sender_signature = $state(init.sender_signature);
 	let unit_price = $state(init.unit_price);
 	let months = $state(init.months);
 	let period_start = $state(init.period_start);
@@ -231,10 +221,6 @@
 			client_company: client_company.trim(),
 			engineer_affiliation_company: emptyToNull(engineer_affiliation_company),
 			engineer_parent_company: emptyToNull(engineer_parent_company),
-			sender_company: emptyToNull(sender_company),
-			sender_registration_number: emptyToNull(sender_registration_number),
-			sender_address: emptyToNull(sender_address),
-			sender_signature: emptyToNull(sender_signature),
 			unit_price: up,
 			months: m,
 			period_start: emptyToNull(period_start),
@@ -297,47 +283,6 @@
 					<option value="送付済み">送付済み</option>
 					<option value="承認済み">承認済み</option>
 				</select>
-			</div>
-		</Card.Content>
-	</Card.Root>
-
-	<!-- 自社情報 -->
-	<Card.Root>
-		<Card.Header class="pb-4">
-			<Card.Title class="text-base">自社情報（発行元）</Card.Title>
-		</Card.Header>
-		<Card.Content class="grid grid-cols-1 gap-4 md:grid-cols-2">
-			<div class="md:col-span-2">
-				<label class={labelClass} for="sender_company">会社名</label>
-				<Input
-					id="sender_company"
-					bind:value={sender_company}
-					class="mt-1"
-					placeholder="株式会社◯◯"
-				/>
-			</div>
-			<div class="md:col-span-2">
-				<label class={labelClass} for="sender_address">住所</label>
-				<Input id="sender_address" bind:value={sender_address} class="mt-1" />
-			</div>
-			<div class="md:col-span-2">
-				<label class={labelClass} for="sender_registration_number">適格請求書登録番号</label>
-				<Input
-					id="sender_registration_number"
-					bind:value={sender_registration_number}
-					class="mt-1"
-					placeholder="T1234567890123"
-				/>
-			</div>
-			<div class="md:col-span-2">
-				<label class={labelClass} for="sender_signature">署名テキスト</label>
-				<textarea
-					id="sender_signature"
-					class={textareaClass}
-					rows={2}
-					bind:value={sender_signature}
-					placeholder="代表取締役　山田 太郎"
-				></textarea>
 			</div>
 		</Card.Content>
 	</Card.Root>

@@ -7,7 +7,7 @@
 	import { orderSheets, type Order } from '$lib/mock/orders';
 	import { engineers } from '$lib/mock/engineers';
 	import { projects } from '$lib/mock/projects';
-	import { DEFAULT_SENDER, generateOrderNumber } from '$lib/mock/order-utils';
+	import { generateOrderNumber } from '$lib/mock/order-utils';
 	import { today } from '$lib/utils';
 
 	let isSubmitting = $state(false);
@@ -17,7 +17,6 @@
 
 	const initialData = $derived.by(() => {
 		const data: Partial<Order> = {
-			...DEFAULT_SENDER,
 			issue_date: today(),
 			status: '下書き',
 			order_type: '注文書'

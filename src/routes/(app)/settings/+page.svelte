@@ -26,7 +26,7 @@
 	<div class="flex items-center gap-3">
 		<div class="min-w-0 flex-1">
 			<h1 class="text-2xl font-bold tracking-tight">会社設定</h1>
-			<p class="mt-0.5 text-sm text-muted-foreground">請求書に表示する自社情報・振込先を編集します</p>
+			<p class="mt-0.5 text-sm text-muted-foreground">請求書・見積書・注文書に表示する自社情報・振込先を編集します</p>
 		</div>
 	</div>
 

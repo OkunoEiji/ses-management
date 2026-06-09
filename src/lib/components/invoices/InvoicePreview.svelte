@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { InvoicePreviewData } from '$lib/mock/invoice-utils';
-	import { buildInvoiceLineRows, INVOICE_TABLE_EMPTY_ROW_COUNT } from '$lib/mock/invoice-utils';
+	import { buildInvoiceLineRows, resolveDueDate } from '$lib/mock/invoice-utils';
 	import { parseDateOnly, today } from '$lib/utils';
 
 	let {
@@ -12,9 +12,6 @@
 	} = $props();
 
 	const lineRows = $derived(buildInvoiceLineRows(invoice));
-	const emptyRowCount = $derived(
-		Math.max(0, INVOICE_TABLE_EMPTY_ROW_COUNT - lineRows.length)
-	);
 
 	const pageW = '794px';
 	const border = '1px solid #000';
@@ -37,6 +34,13 @@
 		return `¥${(n ?? 0).toLocaleString()}`;
 	}
 
+	function fmtGridAmount(value: string): string {
+		if (!value.trim()) return '';
+		const n = Number(value);
+		if (Number.isNaN(n)) return value;
+		return n.toLocaleString();
+	}
+
 	function formatJapaneseDate(value?: string | null): string {
 		if (!value) return '';
 		const d = parseDateOnly(value);
@@ -46,7 +50,7 @@
 	const issueDateStr = $derived(
 		formatJapaneseDate(invoice.issue_date ?? invoice.created_at ?? today())
 	);
-	const dueDateStr = $derived(formatJapaneseDate(invoice.due_date));
+	const dueDateStr = $derived(formatJapaneseDate(resolveDueDate(invoice)));
 
 	const thStyle = `border:${border};padding:4px 6px;text-align:center;font-weight:700;background:${headBg};font-size:13px;`;
 	const tdStyle = `border:${border};padding:5px 8px;font-size:13px;height:27px;vertical-align:middle;`;
@@ -140,17 +144,8 @@
 				<tr style="background:{idx % 2 === 0 ? '#fff' : stripeBg};">
 					<td style="{tdStyle}">{row.description}</td>
 					<td style="{tdStyle};text-align:right;">{row.quantity}</td>
-					<td style="{tdStyle};text-align:right;">{row.unitPrice}</td>
-					<td style="{tdStyle};text-align:right;">{fmtYen(Number(row.amount) || 0)}</td>
-				</tr>
-			{/each}
-			{#each Array(emptyRowCount) as _, i (i)}
-				{@const idx = lineRows.length + i}
-				<tr style="background:{idx % 2 === 0 ? '#fff' : stripeBg};">
-					<td style="{tdStyle}">&nbsp;</td>
-					<td style="{tdStyle}">&nbsp;</td>
-					<td style="{tdStyle}">&nbsp;</td>
-					<td style="{tdStyle}">&nbsp;</td>
+					<td style="{tdStyle};text-align:right;">{fmtGridAmount(row.unitPrice)}</td>
+					<td style="{tdStyle};text-align:right;">{fmtGridAmount(row.amount)}</td>
 				</tr>
 			{/each}
 		</tbody>
@@ -161,7 +156,7 @@
 		<p style="margin:0;padding-top:30px;">
 			<span style="">お支払期限：</span>
 			<span style="display:inline-block;min-width:180px;">
-				{dueDateStr || ''}
+				{dueDateStr}{#if dueDateStr}（45日サイト）{/if}
 			</span>
 		</p>
 

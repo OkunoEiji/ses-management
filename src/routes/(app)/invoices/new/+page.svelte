@@ -7,7 +7,7 @@
 	import { invoices, type Invoice, type InvoiceInput } from '$lib/mock/invoices';
 	import { engineers } from '$lib/mock/engineers';
 	import { projects } from '$lib/mock/projects';
-	import { applyStatusTimestamps, generateInvoiceNumber } from '$lib/mock/invoice-utils';
+	import { applyStatusTimestamps, calcDueDateFromBillingMonth, generateInvoiceNumber } from '$lib/mock/invoice-utils';
 	import { today } from '$lib/utils';
 
 	let isSubmitting = $state(false);
@@ -16,9 +16,12 @@
 	const prefillProjectId = $derived(page.url.searchParams.get('project_id'));
 
 	const initialData = $derived.by(() => {
+		const billingMonth = today().slice(0, 7);
 		const data: Partial<Invoice> = {
 			issue_date: today(),
-			status: '下書き'
+			status: '下書き',
+			billing_month: billingMonth,
+			due_date: calcDueDateFromBillingMonth(billingMonth)
 		};
 
 		const engId = prefillEngineerId;
@@ -29,6 +32,8 @@
 				data.unit_price = eng.billing_unit_price ?? eng.desired_unit_price ?? 0;
 				data.standard_hours_min = eng.standard_hours_min;
 				data.standard_hours_max = eng.standard_hours_max;
+				data.deduction_rate = eng.hourly_deduction_rate;
+				data.overtime_rate = eng.hourly_overtime_rate;
 			}
 		}
 

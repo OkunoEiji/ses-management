@@ -10,11 +10,9 @@
 	import * as Card from '$lib/components/ui/card';
 	import * as Table from '$lib/components/ui/table';
 	import * as Dialog from '$lib/components/ui/dialog';
-	import { invoices as initialInvoices, type Invoice, type InvoiceStatus } from '$lib/mock/invoices';
-	import { enrichInvoice } from '$lib/mock/invoice-utils';
+	import { invoices, type Invoice, type InvoiceStatus } from '$lib/mock/invoices';
+	import { enrichInvoice, resolveDueDate } from '$lib/mock/invoice-utils';
 	import { daysUntil, formatYen } from '$lib/utils';
-
-	let invoiceList = $state<Invoice[]>(initialInvoices);
 
 	let deleteTarget = $state<Invoice | null>(null);
 	let deleteDialogOpen = $state(false);
@@ -36,11 +34,13 @@
 	}
 
 	const sortedInvoices = $derived(
-		[...invoiceList].sort((a, b) => {
-			if (!a.due_date && !b.due_date) return 0;
-			if (!a.due_date) return 1;
-			if (!b.due_date) return -1;
-			return a.due_date.localeCompare(b.due_date);
+		[...invoices].sort((a, b) => {
+			const aDue = resolveDueDate(a);
+			const bDue = resolveDueDate(b);
+			if (!aDue && !bDue) return 0;
+			if (!aDue) return 1;
+			if (!bDue) return -1;
+			return aDue.localeCompare(bDue);
 		})
 	);
 
@@ -56,15 +56,17 @@
 
 	function handleDelete() {
 		if (!deleteTarget) return;
-		invoiceList = invoiceList.filter((inv) => inv.id !== deleteTarget!.id);
+		const idx = invoices.findIndex((inv) => inv.id === deleteTarget!.id);
+		if (idx >= 0) invoices.splice(idx, 1);
 		closeDelete();
 	}
 
 	function dueDateMeta(inv: Invoice) {
-		if (!inv.due_date) {
+		const due = resolveDueDate(inv);
+		if (!due) {
 			return { daysLeft: null as number | null, isOverdue: false, isDueSoon: false };
 		}
-		const daysLeft = daysUntil(inv.due_date);
+		const daysLeft = daysUntil(due);
 		const status = displayStatus(inv.status);
 		const isPaid = status === '入金済み';
 		return {
@@ -79,7 +81,7 @@
 	<div class="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
 		<div>
 			<h1 class="text-2xl font-bold tracking-tight">請求書一覧</h1>
-			<p class="mt-1 text-sm text-muted-foreground">{invoiceList.length}件の請求書</p>
+			<p class="mt-1 text-sm text-muted-foreground">{invoices.length}件の請求書</p>
 		</div>
 		<Button class="gap-2" onclick={() => goto('/invoices/new')}>
 			<Plus class="h-4 w-4" />
@@ -87,7 +89,7 @@
 		</Button>
 	</div>
 
-	{#if invoiceList.length === 0}
+	{#if invoices.length === 0}
 		<Card.Root class="p-16 text-center text-muted-foreground">
 			<FileText class="mx-auto mb-3 h-10 w-10 opacity-30" />
 			<p class="font-medium">請求書がありません</p>
@@ -151,7 +153,7 @@
 												? 'font-medium text-amber-600'
 												: ''}
 									>
-										{formatDisplayDate(display.due_date)}
+										{formatDisplayDate(resolveDueDate(display))}
 									</span>
 									{#if meta.daysLeft !== null && status !== '入金済み'}
 										<span

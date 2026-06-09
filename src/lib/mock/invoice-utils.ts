@@ -56,10 +56,34 @@ export type InvoicePreviewData = InvoiceDisplay & {
 	company: CompanySettings;
 };
 
+/** 明細 tbody の行数（ヘッダー行を除く） */
+export const INVOICE_TABLE_ROW_COUNT = 15;
+
 export function billingMonthLabel(billingMonth: string): string {
 	const [y, m] = billingMonth.split('-');
 	if (!y || !m) return billingMonth;
-	return `${y}年${m}月分`;
+	return `${y}年${Number(m)}月度`;
+}
+
+/** 請求対象月から支払期限（検収月の翌々月15日）を算出 */
+export function calcDueDateFromBillingMonth(billingMonth: string): string {
+	const [yStr, mStr] = billingMonth.split('-');
+	const y = Number(yStr);
+	const m = Number(mStr);
+	if (!y || !m) return '';
+
+	let payYear = y;
+	let payMonth = m + 2;
+	if (payMonth > 12) {
+		payMonth -= 12;
+		payYear += 1;
+	}
+	return `${payYear}-${String(payMonth).padStart(2, '0')}-15`;
+}
+
+export function resolveDueDate(invoice: Pick<Invoice, 'due_date' | 'billing_month'>): string {
+	if (invoice.due_date?.trim()) return invoice.due_date.trim();
+	return calcDueDateFromBillingMonth(invoice.billing_month);
 }
 
 export function resolveEngineerName(invoice: Pick<Invoice, 'engineer_id'>): string {
@@ -72,7 +96,9 @@ export function resolveProjectName(invoice: Pick<Invoice, 'project_id'>): string
 	return projects.find((p) => p.id === invoice.project_id)?.name ?? null;
 }
 
-export function resolveDeductionOvertimeRates(invoice: Pick<Invoice, 'deduction_rate' | 'overtime_rate' | 'unit_price' | 'standard_hours_min' | 'standard_hours_max'>) {
+export function resolveDeductionOvertimeRates(
+	invoice: Pick<Invoice, 'deduction_rate' | 'overtime_rate' | 'unit_price' | 'standard_hours_min' | 'standard_hours_max'>
+) {
 	const stdMin = invoice.standard_hours_min ?? 140;
 	const stdMax = invoice.standard_hours_max ?? 180;
 	const unitPrice = invoice.unit_price ?? 0;
@@ -204,22 +230,83 @@ export type InvoiceLineRow = {
 	amount: string;
 };
 
-/** 請求書原本の明細行（作業者・作業時間 + 空行） */
-export function buildInvoiceLineRows(preview: InvoicePreviewData): InvoiceLineRow[] {
-	return [
-		{
-			description: `作業者: ${preview.engineer_name || ''}`,
-			quantity: '1',
-			unitPrice: '',
-			amount: '0'
-		},
-		{
-			description: '作業時間:',
-			quantity: preview.actual_hours != null ? String(preview.actual_hours) : '',
-			unitPrice: '',
-			amount: '0'
-		}
-	];
+function emptyLineRow(): InvoiceLineRow {
+	return { description: '', quantity: '', unitPrice: '', amount: '' };
 }
 
-export const INVOICE_TABLE_EMPTY_ROW_COUNT = 15;
+function fmtGridNum(n: number): string {
+	return n.toLocaleString();
+}
+
+/** 請求書明細行（合計 {INVOICE_TABLE_ROW_COUNT} 行、空行でパディング） */
+export function buildInvoiceLineRows(preview: InvoicePreviewData): InvoiceLineRow[] {
+	const rates = resolveDeductionOvertimeRates(preview);
+	const totals = calcInvoiceTotals({
+		unit_price: preview.unit_price,
+		actual_hours: preview.actual_hours ?? undefined,
+		standard_hours_min: preview.standard_hours_min ?? undefined,
+		standard_hours_max: preview.standard_hours_max ?? undefined,
+		deduction_rate: rates.deduction_rate,
+		overtime_rate: rates.overtime_rate,
+		travel_expenses: preview.travel_expenses ?? undefined,
+		tax_rate: preview.tax_rate ?? undefined
+	});
+
+	const baseAmount = preview.unit_price * 10_000;
+	const rows: InvoiceLineRow[] = [];
+
+	rows.push(emptyLineRow());
+	rows.push({
+		description: billingMonthLabel(preview.billing_month),
+		quantity: '',
+		unitPrice: '',
+		amount: ''
+	});
+	rows.push({
+		description: preview.project_name ?? '',
+		quantity: '',
+		unitPrice: '',
+		amount: ''
+	});
+	rows.push({
+		description: `作業者：${preview.engineer_name || ''}`,
+		quantity: '1',
+		unitPrice: fmtGridNum(baseAmount),
+		amount: String(baseAmount)
+	});
+
+	const hours =
+		preview.actual_hours != null && preview.actual_hours > 0
+			? `${preview.actual_hours}H`
+			: '';
+	rows.push({
+		description: hours ? `作業時間：${hours}` : '作業時間：',
+		quantity: '',
+		unitPrice: '',
+		amount: ''
+	});
+
+	if (totals.deduction_hours > 0) {
+		rows.push({
+			description: `控除時間：-${totals.deduction_hours}H　控除金額：${fmtGridNum(rates.deduction_rate)}`,
+			quantity: String(-totals.deduction_hours),
+			unitPrice: fmtGridNum(rates.deduction_rate),
+			amount: String(-totals.deduction_amount)
+		});
+	}
+
+	if (totals.overtime_hours > 0) {
+		rows.push({
+			description: `超過時間：+${totals.overtime_hours}H　超過金額：${fmtGridNum(rates.overtime_rate)}`,
+			quantity: String(totals.overtime_hours),
+			unitPrice: fmtGridNum(rates.overtime_rate),
+			amount: String(totals.overtime_amount)
+		});
+	}
+
+	while (rows.length < INVOICE_TABLE_ROW_COUNT) {
+		rows.push(emptyLineRow());
+	}
+
+	return rows.slice(0, INVOICE_TABLE_ROW_COUNT);
+}

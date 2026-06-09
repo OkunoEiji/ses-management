@@ -13,10 +13,6 @@ export type Order = {
 	engineer_id?: string | null;
 	engineer_name?: string | null;
 	client_company: string;
-	sender_company?: string | null;
-	sender_registration_number?: string | null;
-	sender_address?: string | null;
-	sender_signature?: string | null;
 	order_amount?: number | null;
 	amount_subtotal?: number | null;
 	tax_amount?: number | null;
@@ -45,13 +41,6 @@ export type Order = {
 	updated_at?: string | null;
 };
 
-const DEFAULT_SENDER = {
-	sender_company: '株式会社SES管理',
-	sender_registration_number: 'T1234567890123',
-	sender_address: '東京都渋谷区1-2-3',
-	sender_signature: '株式会社SES管理'
-} as const;
-
 function calcOrderAmounts(unitPrice: number, months: number, taxRate = 10) {
 	const amount_subtotal = unitPrice * 10_000 * months;
 	const tax_amount = Math.round(amount_subtotal * (taxRate / 100));
@@ -75,7 +64,6 @@ export const orderSheets: Order[] = [
 			engineer_name: '佐藤花子',
 			client_company: '株式会社エージェントX',
 			engineer_affiliation_company: null,
-			...DEFAULT_SENDER,
 			...amounts,
 			unit_price,
 			cost_unit_price: 55,
@@ -111,7 +99,6 @@ export const orderSheets: Order[] = [
 			engineer_name: '鈴木一郎',
 			client_company: '株式会社パートナーY',
 			engineer_affiliation_company: '株式会社テックパートナー',
-			...DEFAULT_SENDER,
 			...amounts,
 			unit_price,
 			cost_unit_price: 70,
@@ -147,7 +134,6 @@ export const orderSheets: Order[] = [
 			engineer_name: '田中次郎',
 			client_company: '株式会社クライアントB',
 			engineer_affiliation_company: null,
-			...DEFAULT_SENDER,
 			...amounts,
 			unit_price,
 			cost_unit_price: null,
@@ -183,7 +169,6 @@ export const orderSheets: Order[] = [
 			engineer_name: '佐藤花子',
 			client_company: '株式会社エージェントX',
 			engineer_affiliation_company: null,
-			...DEFAULT_SENDER,
 			...amounts,
 			unit_price,
 			cost_unit_price: 55,
@@ -219,7 +204,6 @@ export const orderSheets: Order[] = [
 			engineer_name: '高橋美咲',
 			client_company: '株式会社クライアントB',
 			engineer_affiliation_company: null,
-			...DEFAULT_SENDER,
 			...amounts,
 			unit_price,
 			cost_unit_price: null,

@@ -9,8 +9,10 @@
 	import { orderSheets } from '$lib/mock/orders';
 	import { calcRates } from '$lib/mock/order-utils';
 	import {
+		calcDueDateFromBillingMonth,
 		calcInvoiceTotals,
 		generateInvoiceNumber,
+		resolveDeductionOvertimeRates,
 		resolveEngineerName
 	} from '$lib/mock/invoice-utils';
 	import { formatYen, today } from '$lib/utils';
@@ -30,29 +32,41 @@
 	const isEdit = $derived(!!initialData.id);
 
 	function formStateFromInvoice(data: Partial<Invoice> = {}) {
+		const billingMonth = data.billing_month ?? today().slice(0, 7);
+		const unitPrice = data.unit_price ?? 0;
+		const stdMin = data.standard_hours_min ?? 140;
+		const stdMax = data.standard_hours_max ?? 180;
+		const rates = resolveDeductionOvertimeRates({
+			unit_price: unitPrice,
+			standard_hours_min: stdMin,
+			standard_hours_max: stdMax,
+			deduction_rate: data.deduction_rate ?? null,
+			overtime_rate: data.overtime_rate ?? null
+		});
+
 		return {
 			hasId: !!data.id,
 			invoice_number: data.invoice_number ?? '',
 			engineer_id: data.engineer_id ?? '',
 			project_id: data.project_id ?? '',
 			client_name: data.client_name ?? '',
-			billing_month: data.billing_month ?? today().slice(0, 7),
-			unit_price: data.unit_price ?? 0,
+			billing_month: billingMonth,
+			unit_price: unitPrice,
 			status: (data.status ?? '下書き') as InvoiceStatus,
 			issue_date: data.issue_date ?? today(),
-			due_date: data.due_date ?? '',
+			due_date: data.due_date ?? calcDueDateFromBillingMonth(billingMonth),
 			actual_hours: data.actual_hours,
-			standard_hours_min: data.standard_hours_min ?? 140,
-			standard_hours_max: data.standard_hours_max ?? 180,
-			deduction_rate: data.deduction_rate,
-			overtime_rate: data.overtime_rate,
+			standard_hours_min: stdMin,
+			standard_hours_max: stdMax,
+			deduction_rate: rates.deduction_rate,
+			overtime_rate: rates.overtime_rate,
 			travel_expenses: data.travel_expenses ?? 0,
 			tax_rate: data.tax_rate ?? 10,
 			notes: data.notes ?? ''
 		};
 	}
 
-	const init = (() => formStateFromInvoice(initialData))();
+	const init = formStateFromInvoice(initialData);
 
 	let invoice_number = $state(
 		init.invoice_number || (!init.hasId ? generateInvoiceNumber(0) : '')
@@ -61,15 +75,15 @@
 	let project_id = $state(init.project_id);
 	let client_name = $state(init.client_name);
 	let billing_month = $state(init.billing_month);
-	let unit_price = $state(init.unit_price ? String(init.unit_price) : '');
+	let unit_price = $state(init.unit_price != null ? String(init.unit_price) : '');
 	let status = $state<InvoiceStatus>(init.status);
 	let issue_date = $state(init.issue_date);
 	let due_date = $state(init.due_date);
 	let actual_hours = $state(init.actual_hours?.toString() ?? '');
 	let standard_hours_min = $state(String(init.standard_hours_min));
 	let standard_hours_max = $state(String(init.standard_hours_max));
-	let deduction_rate = $state(init.deduction_rate?.toString() ?? '');
-	let overtime_rate = $state(init.overtime_rate?.toString() ?? '');
+	let deduction_rate = $state(String(init.deduction_rate ?? ''));
+	let overtime_rate = $state(String(init.overtime_rate ?? ''));
 	let travel_expenses = $state(String(init.travel_expenses));
 	let tax_rate = $state(String(init.tax_rate));
 	let notes = $state(init.notes);
@@ -79,6 +93,20 @@
 	const textareaClass = selectClass + ' min-h-24 py-2';
 	const labelClass = 'text-sm font-medium';
 
+	const resolvedRates = $derived.by(() => {
+		const up = Number(unit_price);
+		if (Number.isNaN(up) || unit_price.trim() === '') {
+			return { deduction_rate: 0, overtime_rate: 0 };
+		}
+		return resolveDeductionOvertimeRates({
+			unit_price: up,
+			standard_hours_min: Number(standard_hours_min) || 140,
+			standard_hours_max: Number(standard_hours_max) || 180,
+			deduction_rate: numOrUndefined(deduction_rate) ?? null,
+			overtime_rate: numOrUndefined(overtime_rate) ?? null
+		});
+	});
+
 	const totals = $derived.by(() => {
 		const up = Number(unit_price);
 		if (Number.isNaN(up) || unit_price.trim() === '') return null;
@@ -87,8 +115,8 @@
 			actual_hours: Number(actual_hours) || 0,
 			standard_hours_min: Number(standard_hours_min) || 140,
 			standard_hours_max: Number(standard_hours_max) || 180,
-			deduction_rate: Number(deduction_rate) || 0,
-			overtime_rate: Number(overtime_rate) || 0,
+			deduction_rate: resolvedRates.deduction_rate,
+			overtime_rate: resolvedRates.overtime_rate,
 			travel_expenses: Number(travel_expenses) || 0,
 			tax_rate: Number(tax_rate) || 10
 		});
@@ -109,9 +137,20 @@
 	}
 
 	function applyRatesFromUnitPrice(up: string, hMin: string, hMax: string) {
-		const { deduction, overtime } = calcRates(parseFloat(up) || 0, parseFloat(hMin) || 0, parseFloat(hMax) || 0);
+		const { deduction, overtime } = calcRates(
+			parseFloat(up) || 0,
+			parseFloat(hMin) || 0,
+			parseFloat(hMax) || 0
+		);
 		if (deduction > 0) deduction_rate = String(deduction);
 		if (overtime > 0) overtime_rate = String(overtime);
+	}
+
+	function onBillingMonthChange(value: string) {
+		billing_month = value;
+		if (value.trim()) {
+			due_date = calcDueDateFromBillingMonth(value.trim());
+		}
 	}
 
 	function onOrderSheetSelect(orderId: string) {
@@ -122,12 +161,15 @@
 		engineer_id = order.engineer_id ?? '';
 		project_id = order.project_id ?? '';
 		client_name = order.client_company ?? '';
-		unit_price = order.unit_price?.toString() ?? '';
+		unit_price = order.unit_price != null ? String(order.unit_price) : '';
 		standard_hours_min = String(order.standard_hours_min ?? 140);
 		standard_hours_max = String(order.standard_hours_max ?? 180);
-		deduction_rate = order.deduction_rate?.toString() ?? '';
-		overtime_rate = order.overtime_rate?.toString() ?? '';
+		if (order.deduction_rate != null) deduction_rate = String(order.deduction_rate);
+		else applyRatesFromUnitPrice(unit_price, standard_hours_min, standard_hours_max);
+		if (order.overtime_rate != null) overtime_rate = String(order.overtime_rate);
 		billing_month = order.period_start ? order.period_start.slice(0, 7) : today().slice(0, 7);
+		due_date = calcDueDateFromBillingMonth(billing_month);
+		if (order.issue_date) issue_date = order.issue_date;
 		notes = order.notes ?? '';
 	}
 
@@ -142,7 +184,15 @@
 
 		standard_hours_min = String(eng.standard_hours_min ?? 140);
 		standard_hours_max = String(eng.standard_hours_max ?? 180);
-		applyRatesFromUnitPrice(unit_price, standard_hours_min, standard_hours_max);
+
+		if (eng.hourly_deduction_rate != null) {
+			deduction_rate = String(eng.hourly_deduction_rate);
+		} else {
+			applyRatesFromUnitPrice(unit_price, standard_hours_min, standard_hours_max);
+		}
+		if (eng.hourly_overtime_rate != null) {
+			overtime_rate = String(eng.hourly_overtime_rate);
+		}
 
 		if (eng.project_id) onProjectChange(eng.project_id);
 	}
@@ -175,8 +225,8 @@
 			actual_hours: numOrUndefined(actual_hours),
 			standard_hours_min: Number(standard_hours_min) || 140,
 			standard_hours_max: Number(standard_hours_max) || 180,
-			deduction_rate: numOrUndefined(deduction_rate),
-			overtime_rate: numOrUndefined(overtime_rate),
+			deduction_rate: resolvedRates.deduction_rate,
+			overtime_rate: resolvedRates.overtime_rate,
 			travel_expenses: Number(travel_expenses) || 0,
 			tax_rate: Number(tax_rate) || 10,
 			notes: emptyToNull(notes)
@@ -277,7 +327,14 @@
 				<label class={labelClass} for="billing_month">
 					請求対象月 <span class="text-destructive">*</span>
 				</label>
-				<Input id="billing_month" type="month" bind:value={billing_month} required class="mt-1" />
+				<Input
+					id="billing_month"
+					type="month"
+					value={billing_month}
+					onchange={(e) => onBillingMonthChange(e.currentTarget.value)}
+					required
+					class="mt-1"
+				/>
 			</div>
 			<div>
 				<label class={labelClass} for="issue_date">日付</label>
@@ -286,6 +343,7 @@
 			<div>
 				<label class={labelClass} for="due_date">お支払期限</label>
 				<Input id="due_date" type="date" bind:value={due_date} class="mt-1" />
+				<p class="mt-1 text-xs text-muted-foreground">請求対象月から自動設定（検収月の翌々月15日）</p>
 			</div>
 			<div>
 				<label class={labelClass} for="status">ステータス</label>
@@ -376,7 +434,7 @@
 					{#if totals.deduction_hours > 0}
 						<div class="flex justify-between text-red-600">
 							<span>
-								控除（{totals.deduction_hours}h × ¥{(Number(deduction_rate) || 0).toLocaleString()}）
+								控除（-{totals.deduction_hours}H × ¥{resolvedRates.deduction_rate.toLocaleString()}）
 							</span>
 							<span>- {formatYen(totals.deduction_amount)}</span>
 						</div>
@@ -384,7 +442,7 @@
 					{#if totals.overtime_hours > 0}
 						<div class="flex justify-between text-blue-600">
 							<span>
-								超過（{totals.overtime_hours}h × ¥{(Number(overtime_rate) || 0).toLocaleString()}）
+								超過（+{totals.overtime_hours}H × ¥{resolvedRates.overtime_rate.toLocaleString()}）
 							</span>
 							<span>+ {formatYen(totals.overtime_amount)}</span>
 						</div>
