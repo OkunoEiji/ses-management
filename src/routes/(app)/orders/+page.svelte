@@ -6,7 +6,6 @@
 	import Trash2 from '@lucide/svelte/icons/trash-2';
 	import FileCheck from '@lucide/svelte/icons/file-check';
 	import Search from '@lucide/svelte/icons/search';
-	import ArrowUpDown from '@lucide/svelte/icons/arrow-up-down';
 	import Calendar from '@lucide/svelte/icons/calendar';
 	import AlertTriangle from '@lucide/svelte/icons/alert-triangle';
 	import TrendingUp from '@lucide/svelte/icons/trending-up';
@@ -145,7 +144,6 @@
 		<div class="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
 			<div>
 				<h1 class="text-2xl font-bold tracking-tight">注文書一覧</h1>
-				<p class="mt-1 text-sm text-muted-foreground">{orderList.length}件</p>
 			</div>
 			<Button class="gap-2" onclick={() => goto('/orders/new')}>
 				<Plus class="h-4 w-4" />
@@ -216,21 +214,20 @@
 				<p class="font-medium">データがありません</p>
 			</Card.Root>
 		{:else}
-			<div class="space-y-4">
+			<div class="space-y-2">
 				{#each Object.entries(grouped) as [projName, projOrders] (projName)}
-					<Card.Root class="border border-border shadow-none ring-0">
-						<Card.Header class="px-5 pt-4 pb-3">
+					<Card.Root class="gap-0 border border-border py-0 shadow-none ring-0">
+						<Card.Header class="px-5 pt-2">
 							<div class="flex items-center justify-between">
 								<Card.Title
 									class="flex items-center gap-2 text-sm font-semibold text-muted-foreground"
 								>
-									<ArrowUpDown class="h-3.5 w-3.5" />
-									案件：{projName}
+									案件名：{projName}
 								</Card.Title>
-								<span class="text-xs text-muted-foreground">{projOrders.length}件</span>
+								<span class="text-l text-muted-foreground">{projOrders.length}件</span>
 							</div>
 						</Card.Header>
-						<Card.Content class="space-y-2 px-5 pb-4">
+						<Card.Content class="space-y-0.5 px-6 py-1">
 							{#each projOrders as order (order.id)}
 								{@const status = displayStatus(order.status)}
 								{@const meta = periodMeta(order.period_end)}

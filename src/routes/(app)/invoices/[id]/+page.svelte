@@ -93,7 +93,13 @@
 				</p>
 			</div>
 			<div class="flex shrink-0 flex-wrap gap-1.5">
-				<Button variant="outline" size="sm" class="h-7 gap-1 px-2 text-xs" onclick={() => goto(`/invoices/${id}/edit`)}>
+				<Button
+					variant="outline"
+					size="sm"
+					class="h-7 gap-1 px-2 text-xs"
+					disabled={status !== '下書き'}
+					onclick={() => goto(`/invoices/${id}/edit`)}
+				>
 					<Pencil class="h-3.5 w-3.5" />
 					編集
 				</Button>

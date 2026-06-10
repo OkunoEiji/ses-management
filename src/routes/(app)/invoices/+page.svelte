@@ -2,6 +2,7 @@
 	import { goto } from '$app/navigation';
 	import Plus from '@lucide/svelte/icons/plus';
 	import Eye from '@lucide/svelte/icons/eye';
+	import Pencil from '@lucide/svelte/icons/pencil';
 	import Trash2 from '@lucide/svelte/icons/trash-2';
 	import FileText from '@lucide/svelte/icons/file-text';
 	import AlertTriangle from '@lucide/svelte/icons/alert-triangle';
@@ -87,7 +88,6 @@
 		<div class="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
 			<div>
 				<h1 class="text-2xl font-bold tracking-tight">請求書一覧</h1>
-				<p class="mt-1 text-sm text-muted-foreground">{invoices.length}件の請求書</p>
 			</div>
 			<Button class="gap-2" onclick={() => goto('/invoices/new')}>
 				<Plus class="h-4 w-4" />
@@ -111,7 +111,7 @@
 						<Table.Head class="font-semibold">作業者</Table.Head>
 						<Table.Head class="font-semibold">請求先</Table.Head>
 						<Table.Head class="font-semibold">請求月</Table.Head>
-						<Table.Head class="text-right font-semibold">合計（税込）</Table.Head>
+						<Table.Head class="text-center font-semibold">合計（税込）</Table.Head>
 						<Table.Head class="font-semibold">ステータス</Table.Head>
 						<Table.Head class="font-semibold">お支払期限</Table.Head>
 						<Table.Head class="text-center font-semibold">操作</Table.Head>
@@ -136,7 +136,7 @@
 							<Table.Cell class="font-medium">{display.engineer_name || '—'}</Table.Cell>
 							<Table.Cell>{display.client_name}</Table.Cell>
 							<Table.Cell>{display.billing_month}</Table.Cell>
-							<Table.Cell class="text-right font-medium">
+							<Table.Cell class="text-center font-medium">
 								{formatYen(display.total_amount)}
 							</Table.Cell>
 							<Table.Cell>
@@ -190,6 +190,15 @@
 										onclick={() => goto(`/invoices/${inv.id}`)}
 									>
 										<Eye class="h-4 w-4" />
+									</Button>
+									<Button
+										variant="ghost"
+										size="icon"
+										class="h-8 w-8"
+										disabled={status !== '下書き'}
+										onclick={() => goto(`/invoices/${inv.id}/edit`)}
+									>
+										<Pencil class="h-4 w-4" />
 									</Button>
 									<Button
 										variant="ghost"
