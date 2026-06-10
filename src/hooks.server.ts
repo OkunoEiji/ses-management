@@ -11,5 +11,14 @@ export const handle: Handle = async ({ event, resolve }) => {
         redirect(302, '/login');
     }
 
-    return resolve(event);
+    const response = await resolve(event);
+
+    if (
+        event.request.method === 'GET' &&
+        response.headers.get('content-type')?.includes('text/html')
+    ) {
+        response.headers.set('Cache-Control', 'no-cache');
+    }
+
+    return response;
 };

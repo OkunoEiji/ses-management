@@ -1,5 +1,6 @@
 import type { Actions, PageServerLoad } from './$types';
 import { error, redirect } from '@sveltejs/kit';
+import { readActionJson } from '$lib/server/action-body';
 import { requireDb } from '$lib/server/db/platform';
 import { getOrder, updateOrder } from '$lib/server/repositories/orders';
 import { listEngineers } from '$lib/server/repositories/engineers';
@@ -19,7 +20,7 @@ export const load: PageServerLoad = async ({ params, platform }) => {
 export const actions: Actions = {
 	default: async ({ request, params, platform }) => {
 		const db = requireDb(platform);
-		const data = (await request.json()) as Omit<Order, 'id'>;
+		const data = await readActionJson<Omit<Order, 'id'>>(request);
 		const existing = await getOrder(db, params.id);
 		if (!existing) error(404, '注文書が見つかりません');
 		await updateOrder(db, params.id, {

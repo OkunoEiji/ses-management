@@ -1,5 +1,6 @@
 import type { Actions, PageServerLoad } from './$types';
 import { error, redirect } from '@sveltejs/kit';
+import { readActionJson } from '$lib/server/action-body';
 import { requireDb } from '$lib/server/db/platform';
 import { getEngineer, updateEngineer } from '$lib/server/repositories/engineers';
 import { listProjects } from '$lib/server/repositories/projects';
@@ -16,7 +17,7 @@ export const load: PageServerLoad = async ({ params, platform }) => {
 export const actions: Actions = {
 	default: async ({ request, params, platform }) => {
 		const db = requireDb(platform);
-		const data = (await request.json()) as Omit<Engineer, 'id'>;
+		const data = await readActionJson<Omit<Engineer, 'id'>>(request);
 		const engineer = await updateEngineer(db, params.id, data);
 		if (!engineer) error(404, '要員が見つかりません');
 		redirect(303, `/engineers/${params.id}`);

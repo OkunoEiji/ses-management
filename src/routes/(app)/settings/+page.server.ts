@@ -1,4 +1,5 @@
 import type { Actions, PageServerLoad } from './$types';
+import { readActionJson } from '$lib/server/action-body';
 import { requireDb } from '$lib/server/db/platform';
 import { getCompanySettings, updateCompanySettings } from '$lib/server/repositories/company-settings';
 import type { CompanySettings } from '$lib/types';
@@ -11,7 +12,7 @@ export const load: PageServerLoad = async ({ platform }) => {
 export const actions: Actions = {
 	default: async ({ request, platform }) => {
 		const db = requireDb(platform);
-		const data = (await request.json()) as CompanySettings;
+		const data = await readActionJson<CompanySettings>(request);
 		const companySettings = await updateCompanySettings(db, data);
 		return { companySettings };
 	}

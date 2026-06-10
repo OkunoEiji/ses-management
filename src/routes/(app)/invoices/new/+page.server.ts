@@ -1,5 +1,6 @@
 import type { Actions, PageServerLoad } from './$types';
 import { redirect } from '@sveltejs/kit';
+import { readActionJson } from '$lib/server/action-body';
 import { requireDb } from '$lib/server/db/platform';
 import { countInvoices, createInvoice } from '$lib/server/repositories/invoices';
 import { listEngineers } from '$lib/server/repositories/engineers';
@@ -22,7 +23,7 @@ export const load: PageServerLoad = async ({ platform, url }) => {
 export const actions: Actions = {
 	default: async ({ request, platform }) => {
 		const db = requireDb(platform);
-		const data = (await request.json()) as InvoiceInput;
+		const data = await readActionJson<InvoiceInput>(request);
 		const count = await countInvoices(db);
 		const invoice = await createInvoice(db, {
 			...data,
