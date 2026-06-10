@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { Input } from '$lib/components/ui/input';
 	import { Button } from '$lib/components/ui/button';
-	import type { Project, ProjectStatus } from '$lib/mock/projects';
+	import type { Project, ProjectStatus } from '$lib/types';
 
 	let {
 		initialData = {},

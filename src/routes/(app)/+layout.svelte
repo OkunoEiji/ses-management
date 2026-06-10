@@ -2,9 +2,16 @@
     import MenuIcon from '@lucide/svelte/icons/menu';
     import { Button } from '$lib/components/ui/button';
     import Sidebar from '$lib/components/layout/Sidebar.svelte';
+    import { companySettings } from '$lib/stores/company-settings.svelte';
 
-    let { children } = $props();
+    let { children, data } = $props();
     let isSidebarOpen = $state(false);
+
+    $effect(() => {
+        if (data.companySettings) {
+            companySettings.set(data.companySettings);
+        }
+    });
 
     function toggleSidebar() {
         isSidebarOpen = !isSidebarOpen;

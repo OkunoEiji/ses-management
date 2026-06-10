@@ -17,18 +17,17 @@
 	import * as Card from '$lib/components/ui/card';
 	import * as Dialog from '$lib/components/ui/dialog';
 	import ListPageLayout from '$lib/components/layout/ListPageLayout.svelte';
-	import {
-		orderSheets as initialOrders,
-		type Order,
-		type OrderStatus
-	} from '$lib/mock/orders';
+	import { invalidateAll } from '$app/navigation';
+	import { submitDeleteAction } from '$lib/api/submit';
+	import type { Order, OrderStatus } from '$lib/types';
 	import { daysUntil } from '$lib/utils';
 	import { cn } from '$lib/utils';
 
 	type TabKey = 'estimate' | 'order';
 	type PriceField = 'billing' | 'cost';
 
-	let orderList = $state<Order[]>(initialOrders);
+	let { data } = $props();
+	let orderList = $derived(data.orders);
 	let search = $state('');
 	let filterStatus = $state<'all' | OrderStatus>('all');
 	let activeTab = $state<TabKey>('estimate');
@@ -133,11 +132,11 @@
 		deleteTarget = null;
 	}
 
-	function handleDelete() {
+	async function handleDelete() {
 		if (!deleteTarget) return;
-		const idx = orderList.findIndex((o) => o.id === deleteTarget!.id);
-		if (idx >= 0) orderList.splice(idx, 1);
+		await submitDeleteAction(deleteTarget.id);
 		closeDelete();
+		await invalidateAll();
 	}
 </script>
 

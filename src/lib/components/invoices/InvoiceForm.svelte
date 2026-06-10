@@ -2,11 +2,8 @@
 	import FileCheck from '@lucide/svelte/icons/file-check';
 	import { Input } from '$lib/components/ui/input';
 	import { Button } from '$lib/components/ui/button';
-	import type { Invoice, InvoiceInput, InvoiceStatus } from '$lib/mock/invoices';
-	import { engineers } from '$lib/mock/engineers';
-	import { projects } from '$lib/mock/projects';
-	import { orderSheets } from '$lib/mock/orders';
-	import { calcRates } from '$lib/mock/order-utils';
+	import type { Engineer, Invoice, InvoiceInput, InvoiceStatus, Order, Project } from '$lib/types';
+	import { calcRates } from '$lib/utils/order-utils';
 	import InvoicePreview from '$lib/components/invoices/InvoicePreview.svelte';
 	import CollapsibleFormCard from '$lib/components/ui/CollapsibleFormCard.svelte';
 	import {
@@ -16,7 +13,7 @@
 		INVOICE_PREVIEW_PAGE_WIDTH_PX,
 		resolveDeductionOvertimeRates,
 		toInvoicePreview
-	} from '$lib/mock/invoice-utils';
+	} from '$lib/utils/invoice-utils';
 	import { companySettings } from '$lib/stores/company-settings.svelte';
 	import { today } from '$lib/utils';
 
@@ -24,11 +21,17 @@
 	const previewPageHeight = `${INVOICE_PREVIEW_PAGE_HEIGHT_PX}px`;
 
 	let {
+		engineers = [],
+		projects = [],
+		orders = [],
 		initialData = {},
 		onSubmit,
 		isSubmitting = false,
 		submitLabel = '登録する'
 	}: {
+		engineers?: Engineer[];
+		projects?: Project[];
+		orders?: Order[];
 		initialData?: Partial<Invoice>;
 		onSubmit: (data: InvoiceInput) => void;
 		isSubmitting?: boolean;
@@ -187,7 +190,7 @@
 
 	function onOrderSheetSelect(orderId: string) {
 		if (!orderId) return;
-		const order = orderSheets.find((o) => o.id === orderId);
+		const order = orders.find((o) => o.id === orderId);
 		if (!order) return;
 
 		engineer_id = order.engineer_id ?? '';
@@ -288,7 +291,7 @@
 						onchange={(e) => onOrderSheetSelect(e.currentTarget.value)}
 					>
 						<option value="">注文書から自動入力...</option>
-						{#each orderSheets as order (order.id)}
+						{#each orders as order (order.id)}
 							<option value={order.id}>
 								{order.order_number ?? '（番号なし）'}
 								{#if order.engineer_name}| {order.engineer_name}{/if}

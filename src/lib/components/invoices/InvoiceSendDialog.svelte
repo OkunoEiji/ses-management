@@ -6,8 +6,7 @@
 	import {
 		buildInvoiceEmailDefaults,
 		type InvoicePreviewData
-	} from '$lib/mock/invoice-utils';
-	import { sendInvoiceEmail } from '$lib/mock/invoice-send-logs';
+	} from '$lib/utils/invoice-utils';
 	import { companySettings } from '$lib/stores/company-settings.svelte';
 
 	let {
@@ -110,18 +109,21 @@
 			const content_base64 = await generatePdfBase64(pdfRef);
 
 			sendingPhase = 'mail';
-			await sendInvoiceEmail({
-				invoice_id: invoiceId,
-				from_email: fromEmail.trim(),
-				to_email: toEmail.trim(),
-				subject: subject.trim(),
-				body: body.trim(),
-				status: 'sent',
-				attachment: {
-					filename: pdfFilename,
-					content_base64
-				}
+			const res = await fetch(`/api/invoices/${invoiceId}/send`, {
+				method: 'POST',
+				headers: { 'content-type': 'application/json' },
+				body: JSON.stringify({
+					from_email: fromEmail.trim(),
+					to_email: toEmail.trim(),
+					subject: subject.trim(),
+					body: body.trim(),
+					attachment: {
+						filename: pdfFilename,
+						content_base64
+					}
+				})
 			});
+			if (!res.ok) throw new Error('送付に失敗しました');
 			confirmOpen = false;
 			open = false;
 			onSent?.();

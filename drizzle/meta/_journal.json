@@ -8,6 +8,13 @@
       "when": 1780951027679,
       "tag": "0000_lumpy_johnny_storm",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1781066318862,
+      "tag": "0001_bizarre_komodo",
+      "breakpoints": true
     }
   ]
 }

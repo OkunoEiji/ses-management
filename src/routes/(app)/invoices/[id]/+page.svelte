@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { goto } from '$app/navigation';
+	import { goto, invalidateAll } from '$app/navigation';
 	import { page } from '$app/state';
 	import ArrowLeft from '@lucide/svelte/icons/arrow-left';
 	import Pencil from '@lucide/svelte/icons/pencil';
@@ -8,30 +8,25 @@
 	import { Badge } from '$lib/components/ui/badge';
 	import InvoicePreview from '$lib/components/invoices/InvoicePreview.svelte';
 	import InvoiceSendDialog from '$lib/components/invoices/InvoiceSendDialog.svelte';
-	import { findInvoice, type InvoiceStatus } from '$lib/mock/invoices';
+	import type { InvoiceStatus } from '$lib/types';
 	import {
-		applyStatusTimestamps,
 		INVOICE_PREVIEW_PAGE_HEIGHT_PX,
-		INVOICE_PREVIEW_PAGE_WIDTH_PX,
-		toInvoicePreview
-	} from '$lib/mock/invoice-utils';
-	import { companySettings } from '$lib/stores/company-settings.svelte';
-	import { findProject } from '$lib/mock/projects';
-	import { today } from '$lib/utils';
+		INVOICE_PREVIEW_PAGE_WIDTH_PX
+	} from '$lib/utils/invoice-utils';
 	import Download from '@lucide/svelte/icons/download';
 
 	const previewPageWidth = `${INVOICE_PREVIEW_PAGE_WIDTH_PX}px`;
 	const previewPageHeight = `${INVOICE_PREVIEW_PAGE_HEIGHT_PX}px`;
 
+	let { data } = $props();
 	const id = $derived(page.params.id);
-	const invoice = $derived(id ? findInvoice(id) : undefined);
-	const preview = $derived(invoice ? toInvoicePreview(invoice, companySettings.value) : null);
+	const invoice = $derived(data.invoice);
+	const preview = $derived(data.preview);
+	const project = $derived(data.project);
 
 	let pdfRef = $state<HTMLElement | null>(null);
 	let downloading = $state(false);
 	let sendDialogOpen = $state(false);
-
-	const project = $derived(invoice?.project_id ? findProject(invoice.project_id) : undefined);
 
 	const statusStyles: Record<InvoiceStatus, string> = {
 		下書き: 'bg-gray-100 text-gray-700 border-gray-200',
@@ -47,29 +42,14 @@
 	const isMailSent = $derived(!!preview?.sent_at);
 	const isSendDisabled = $derived(displayStatus(preview?.status) === '下書き');
 
-	function handleSent() {
-		if (!invoice) return;
-		const now = today();
-		if (!invoice.sent_at) {
-			const timestamps = applyStatusTimestamps({ status: '送付済み' }, invoice, now);
-			invoice.sent_at = timestamps.sent_at;
-			if (!invoice.status || invoice.status === '下書き') {
-				invoice.status = '送付済み';
-			}
-			invoice.updated_at = timestamps.updated_at;
-		} else {
-			invoice.updated_at = now;
-		}
+	async function handleSent() {
+		await invalidateAll();
 	}
 
-	function markPaid() {
-		if (!invoice) return;
-		const now = today();
-		const timestamps = applyStatusTimestamps({ status: '入金済み' }, invoice, now);
-		invoice.status = '入金済み';
-		invoice.sent_at = timestamps.sent_at;
-		invoice.paid_at = timestamps.paid_at;
-		invoice.updated_at = timestamps.updated_at;
+	async function markPaid() {
+		if (!id) return;
+		await fetch(`/api/invoices/${id}/mark-paid`, { method: 'POST' });
+		await invalidateAll();
 	}
 
 	async function handleDownloadPdf() {

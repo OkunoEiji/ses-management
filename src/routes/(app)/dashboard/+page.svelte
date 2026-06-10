@@ -5,27 +5,24 @@
 	import Briefcase from '@lucide/svelte/icons/briefcase';
 	import TrendingUp from '@lucide/svelte/icons/trending-up';
 	import * as Card from '$lib/components/ui/card';
-    import StatCard from '$lib/components/dashboard/StatCard.svelte';
-    import StatusBadge from '$lib/components/dashboard/StatusBadge.svelte';
+	import StatCard from '$lib/components/dashboard/StatCard.svelte';
+	import StatusBadge from '$lib/components/dashboard/StatusBadge.svelte';
+	import type { Engineer } from '$lib/types';
 
-	// 後で +page.server.ts の data に差し替え
-	const engineers = [
-		{ id: '1', name: '山田太郎', status: '待機中', skills: ['Java', 'Spring'], desired_unit_price: 70 },
-		{ id: '2', name: '佐藤花子', status: '稼働中', skills: ['React', 'TypeScript'], desired_unit_price: 65 },
-		{ id: '3', name: '鈴木一郎', status: '退場予定', skills: ['AWS', 'Go'], desired_unit_price: 80 }
-	];
+	let { data } = $props();
+	const engineers = $derived(data.engineers);
 
-	const stats = {
+	const stats = $derived({
 		total: engineers.length,
 		waiting: engineers.filter((e) => e.status === '待機中').length,
 		negotiating: engineers.filter((e) => e.status === '商談中').length,
 		active: engineers.filter((e) => e.status === '稼働中').length,
 		leaving: engineers.filter((e) => e.status === '退場予定').length
-	};
+	});
 
-	const availableSoon = engineers
-		.filter((e) => e.status === '待機中' || e.status === '退場予定')
-		.slice(0, 5);
+	const availableSoon = $derived(
+		engineers.filter((e: Engineer) => e.status === '待機中' || e.status === '退場予定').slice(0, 5)
+	);
 </script>
 
 <div class="space-y-6 p-6">

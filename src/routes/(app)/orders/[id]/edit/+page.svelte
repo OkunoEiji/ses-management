@@ -4,29 +4,25 @@
 	import ArrowLeft from '@lucide/svelte/icons/arrow-left';
 	import { Button } from '$lib/components/ui/button';
 	import OrderForm from '$lib/components/orders/OrderForm.svelte';
-	import { orderSheets, findOrderSheet, type Order } from '$lib/mock/orders';
-	import { today } from '$lib/utils';
+	import { submitJsonAction } from '$lib/api/submit';
+	import type { Order } from '$lib/types';
 
+	let { data } = $props();
 	const id = $derived(page.params.id);
-	const order = $derived(id ? findOrderSheet(id) : undefined);
+	const order = $derived(data.order);
 
 	let isSubmitting = $state(false);
 
-	function handleSubmit(data: Omit<Order, 'id'>) {
-		if (!id || !order) return;
+	async function handleSubmit(formData: Omit<Order, 'id'>) {
 		isSubmitting = true;
-
-		const index = orderSheets.findIndex((o) => o.id === id);
-		if (index >= 0) {
-			orderSheets[index] = {
-				id,
-				...data,
-				created_at: order.created_at ?? today(),
-				updated_at: today()
-			};
+		try {
+			await submitJsonAction(formData);
+		} catch (e) {
+			console.error(e);
+			alert('保存に失敗しました');
+		} finally {
+			isSubmitting = false;
 		}
-
-		goto(`/orders/${id}`);
 	}
 </script>
 
@@ -52,6 +48,8 @@
 		{:else}
 			{#key order.id}
 				<OrderForm
+					engineers={data.engineers}
+					projects={data.projects}
 					initialData={order}
 					onSubmit={handleSubmit}
 					{isSubmitting}

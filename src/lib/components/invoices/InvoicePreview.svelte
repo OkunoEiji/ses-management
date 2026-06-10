@@ -1,11 +1,11 @@
 <script lang="ts">
-	import type { InvoicePreviewData } from '$lib/mock/invoice-utils';
+	import type { InvoicePreviewData } from '$lib/utils/invoice-utils';
 	import {
 		buildInvoiceLineRows,
 		INVOICE_PREVIEW_PAGE_HEIGHT_PX,
 		INVOICE_PREVIEW_PAGE_WIDTH_PX,
 		resolveDueDate
-	} from '$lib/mock/invoice-utils';
+	} from '$lib/utils/invoice-utils';
 	import { parseDateOnly, today } from '$lib/utils';
 
 	let {

@@ -1,10 +1,10 @@
 <script lang="ts">
-	import type { Order } from '$lib/mock/orders';
+	import type { Order } from '$lib/types';
 	import {
 		ORDER_PREVIEW_PAGE_HEIGHT_PX,
 		ORDER_PREVIEW_PAGE_WIDTH_PX,
 		resolveOrderPreviewRate
-	} from '$lib/mock/order-utils';
+	} from '$lib/utils/order-utils';
 	import { parseDateOnly } from '$lib/utils';
 	import { companySettings } from '$lib/stores/company-settings.svelte';
 

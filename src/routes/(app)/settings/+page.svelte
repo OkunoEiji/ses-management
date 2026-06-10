@@ -1,24 +1,44 @@
 <script lang="ts">
+	import { invalidateAll } from '$app/navigation';
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
 	import * as Card from '$lib/components/ui/card';
 	import { companySettings } from '$lib/stores/company-settings.svelte';
+	import { submitJsonAction } from '$lib/api/submit';
+	import { DEFAULT_COMPANY_SETTINGS } from '$lib/utils/invoice-utils';
+	import type { CompanySettings } from '$lib/types';
+
+	let { data } = $props();
 
 	let saved = $state(false);
+	let form = $state<CompanySettings>({ ...data.companySettings });
 
-	// フォームの一時状態（保存前）
-	let form = $state({ ...companySettings.value });
-
-	function handleSubmit(e: SubmitEvent) {
+	async function handleSubmit(e: SubmitEvent) {
 		e.preventDefault();
-		companySettings.update({ ...form });
-		saved = true;
-		setTimeout(() => (saved = false), 2500);
+		try {
+			const payload = $state.snapshot(form);
+			const result = await submitJsonAction(payload);
+			const savedSettings =
+				result.type === 'success' &&
+				result.data &&
+				typeof result.data === 'object' &&
+				'companySettings' in result.data
+					? (result.data.companySettings as CompanySettings)
+					: payload;
+
+			form = { ...savedSettings };
+			companySettings.set(savedSettings);
+			saved = true;
+			setTimeout(() => (saved = false), 2500);
+			await invalidateAll();
+		} catch (err) {
+			console.error(err);
+			alert('保存に失敗しました');
+		}
 	}
 
 	function handleReset() {
-		companySettings.reset();
-		form = { ...companySettings.value };
+		form = { ...DEFAULT_COMPANY_SETTINGS };
 	}
 
 	const cardClass = 'gap-0 overflow-hidden rounded-xl border border-border bg-card py-0 shadow-xs ring-0';
@@ -36,7 +56,6 @@
 
 	<form onsubmit={handleSubmit} class="mt-4 flex min-h-0 flex-1 flex-col justify-between overflow-hidden">
 		<div class="grid min-h-0 flex-1 grid-cols-2 grid-rows-2 items-start gap-4">
-			<!-- 会社情報 -->
 			<Card.Root size="sm" class={cardClass}>
 				<Card.Header class={cardHeaderClass}>
 					<Card.Title class={cardTitleClass}>会社情報</Card.Title>
@@ -67,7 +86,6 @@
 				</Card.Content>
 			</Card.Root>
 
-			<!-- 振込先 -->
 			<Card.Root size="sm" class={cardClass}>
 				<Card.Header class={cardHeaderClass}>
 					<Card.Title class={cardTitleClass}>振込先</Card.Title>
@@ -104,7 +122,6 @@
 				</Card.Content>
 			</Card.Root>
 
-			<!-- メール送付 -->
 			<Card.Root size="sm" class={cardClass}>
 				<Card.Header class={cardHeaderClass}>
 					<Card.Title class={cardTitleClass}>メール送付</Card.Title>

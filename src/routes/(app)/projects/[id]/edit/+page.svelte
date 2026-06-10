@@ -4,23 +4,24 @@
 	import ArrowLeft from '@lucide/svelte/icons/arrow-left';
 	import { Button } from '$lib/components/ui/button';
 	import ProjectForm from '$lib/components/projects/ProjectForm.svelte';
-	import { projects, findProject, type Project } from '$lib/mock/projects';
+	import { submitJsonAction } from '$lib/api/submit';
+	import type { Project } from '$lib/types';
 
-	const id = $derived(page.params.id);
-	const project = $derived(id ? findProject(id) : undefined);
+	let { data } = $props();
+	const project = $derived(data.project);
 
 	let isSubmitting = $state(false);
 
-	function handleSubmit(data: Omit<Project, 'id'>) {
-		if (!id) return;
+	async function handleSubmit(formData: Omit<Project, 'id'>) {
 		isSubmitting = true;
-
-		const index = projects.findIndex((p) => p.id === id);
-		if (index >= 0) {
-			projects[index] = { id, ...data };
+		try {
+			await submitJsonAction(formData);
+		} catch (e) {
+			console.error(e);
+			alert('保存に失敗しました');
+		} finally {
+			isSubmitting = false;
 		}
-
-		goto(`/projects/${id}`);
 	}
 </script>
 

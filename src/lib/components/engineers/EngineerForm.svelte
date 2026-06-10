@@ -5,9 +5,8 @@
 	import ChevronRight from '@lucide/svelte/icons/chevron-right';
 	import FormField from '$lib/components/engineers/FormField.svelte';
 	import SkillTagInput from '$lib/components/engineers/SkillTagInput.svelte';
-	import type { Engineer } from '$lib/mock/engineers';
-	import { projects } from '$lib/mock/projects';
-	import { calcRates } from '$lib/mock/order-utils';
+	import type { Engineer, Project } from '$lib/types';
+	import { calcRates } from '$lib/utils/order-utils';
 
 	type FormTab = 'profile' | 'work' | 'rates';
 
@@ -15,6 +14,7 @@
 
 	let {
 		formId = 'engineer-form',
+		projects = [],
 		initialData = {},
 		onSubmit,
 		isSubmitting = false,
@@ -22,6 +22,7 @@
 		showFooterSubmit = true
 	}: {
 		formId?: string;
+		projects?: Project[];
 		initialData?: Partial<Engineer>;
 		onSubmit: (data: Omit<Engineer, 'id'>) => void;
 		isSubmitting?: boolean;

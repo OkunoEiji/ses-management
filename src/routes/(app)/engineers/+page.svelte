@@ -8,9 +8,12 @@
 	import * as Dialog from '$lib/components/ui/dialog';
 	import StatusBadge from '$lib/components/dashboard/StatusBadge.svelte';
 	import ListPageLayout from '$lib/components/layout/ListPageLayout.svelte';
-	import { engineers as initialEngineers, type Engineer } from '$lib/mock/engineers';
-    
-    let engineerList = $state<Engineer[]>(initialEngineers);
+	import { invalidateAll } from '$app/navigation';
+	import { submitDeleteAction } from '$lib/api/submit';
+	import type { Engineer } from '$lib/types';
+
+	let { data } = $props();
+	let engineerList = $derived(data.engineers);
 
     // フィルター
     let search = $state('');
@@ -50,11 +53,11 @@
         deleteTarget = null;
     }
 
-    function handleDelete() {
+    async function handleDelete() {
         if (!deleteTarget) return;
-
-        engineerList = engineerList.filter((engineer) => engineer.id !== deleteTarget!.id);
+        await submitDeleteAction(deleteTarget.id);
         closeDelete();
+        await invalidateAll();
     }
 
     const selectClass = 'flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-xs';

@@ -2,14 +2,14 @@
 	import { Input } from '$lib/components/ui/input';
 	import { Button } from '$lib/components/ui/button';
 	import type {
+		ContractType,
+		Engineer,
 		Order,
 		OrderStatus,
 		OrderType,
-		ContractType,
+		Project,
 		Transportation
-	} from '$lib/mock/orders';
-	import { engineers } from '$lib/mock/engineers';
-	import { projects } from '$lib/mock/projects';
+	} from '$lib/types';
 	import {
 		NOTES_DEFAULT,
 		generateOrderNumber,
@@ -18,7 +18,7 @@
 		ORDER_PREVIEW_PAGE_HEIGHT_PX,
 		ORDER_PREVIEW_PAGE_WIDTH_PX,
 		toOrderPreview
-	} from '$lib/mock/order-utils';
+	} from '$lib/utils/order-utils';
 	import OrderPreview from '$lib/components/orders/OrderPreview.svelte';
 	import CollapsibleFormCard from '$lib/components/ui/CollapsibleFormCard.svelte';
 	import { today } from '$lib/utils';
@@ -27,11 +27,15 @@
 	const previewPageHeight = `${ORDER_PREVIEW_PAGE_HEIGHT_PX}px`;
 
 	let {
+		engineers = [],
+		projects = [],
 		initialData = {},
 		onSubmit,
 		isSubmitting = false,
 		submitLabel = '作成する'
 	}: {
+		engineers?: Engineer[];
+		projects?: Project[];
 		initialData?: Partial<Order>;
 		onSubmit: (data: Omit<Order, 'id'>) => void;
 		isSubmitting?: boolean;

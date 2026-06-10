@@ -13,10 +13,9 @@
 	import { Badge } from '$lib/components/ui/badge';
 	import * as Card from '$lib/components/ui/card';
 	import StatusBadge from '$lib/components/dashboard/StatusBadge.svelte';
-	import { findEngineer } from '$lib/mock/engineers';
-
+	let { data } = $props();
 	const id = $derived(page.params.id);
-	const engineer = $derived(id ? findEngineer(id) : undefined);
+	const engineer = $derived(data.engineer);
 	
     function formatDate(value?: string) {
 		if (!value) return '';

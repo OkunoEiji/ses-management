@@ -9,18 +9,20 @@
 	import { Button } from '$lib/components/ui/button';
 	import { Badge } from '$lib/components/ui/badge';
 	import OrderPreview from '$lib/components/orders/OrderPreview.svelte';
-	import { findOrderSheet, type OrderStatus } from '$lib/mock/orders';
+	import { invalidateAll } from '$app/navigation';
+	import type { OrderStatus } from '$lib/types';
 	import {
 		ORDER_PREVIEW_PAGE_HEIGHT_PX,
 		ORDER_PREVIEW_PAGE_WIDTH_PX
-	} from '$lib/mock/order-utils';
+	} from '$lib/utils/order-utils';
 	import { downloadPdf } from '$lib/utils/pdf-download';
 
 	const previewPageWidth = `${ORDER_PREVIEW_PAGE_WIDTH_PX}px`;
 	const previewPageHeight = `${ORDER_PREVIEW_PAGE_HEIGHT_PX}px`;
 
+	let { data } = $props();
 	const id = $derived(page.params.id);
-	const order = $derived(id ? findOrderSheet(id) : undefined);
+	let order = $derived(data.order);
 
 	let previewRef = $state<HTMLElement | null>(null);
 	let activeTab = $state<'estimate' | 'order'>('estimate');
@@ -54,14 +56,24 @@
 		return status ?? '下書き';
 	}
 
-	function markSent() {
-		if (!order) return;
-		order.status = '送付済み';
+	async function markSent() {
+		if (!id) return;
+		await fetch(`/api/orders/${id}/status`, {
+			method: 'POST',
+			headers: { 'content-type': 'application/json' },
+			body: JSON.stringify({ status: '送付済み' })
+		});
+		await invalidateAll();
 	}
 
-	function markApproved() {
-		if (!order) return;
-		order.status = '承認済み';
+	async function markApproved() {
+		if (!id) return;
+		await fetch(`/api/orders/${id}/status`, {
+			method: 'POST',
+			headers: { 'content-type': 'application/json' },
+			body: JSON.stringify({ status: '承認済み' })
+		});
+		await invalidateAll();
 	}
 
 	async function handleDownloadPdf() {

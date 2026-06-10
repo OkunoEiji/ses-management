@@ -1,23 +1,24 @@
 <script lang="ts">
-	import { goto } from '$app/navigation';
 	import ArrowLeft from '@lucide/svelte/icons/arrow-left';
 	import { Button } from '$lib/components/ui/button';
 	import EngineerForm from '$lib/components/engineers/EngineerForm.svelte';
-	import { engineers, type Engineer } from '$lib/mock/engineers';
+	import { submitJsonAction } from '$lib/api/submit';
+	import type { Engineer } from '$lib/types';
 
+	let { data } = $props();
 	const formId = 'engineer-new-form';
 	let isSubmitting = $state(false);
 
-	function handleSubmit(data: Omit<Engineer, 'id'>) {
+	async function handleSubmit(formData: Omit<Engineer, 'id'>) {
 		isSubmitting = true;
-
-		const newEngineer: Engineer = {
-			id: crypto.randomUUID(),
-			...data
-		};
-
-		engineers.push(newEngineer);
-		goto('/engineers');
+		try {
+			await submitJsonAction(formData);
+		} catch (e) {
+			console.error(e);
+			alert('保存に失敗しました');
+		} finally {
+			isSubmitting = false;
+		}
 	}
 </script>
 
@@ -35,6 +36,7 @@
 	<div class="min-h-0 flex-1 pt-3">
 		<EngineerForm
 			{formId}
+			projects={data.projects}
 			onSubmit={handleSubmit}
 			{isSubmitting}
 			submitLabel="登録する"

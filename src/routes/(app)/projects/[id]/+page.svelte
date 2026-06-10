@@ -12,12 +12,12 @@
 	import { Badge } from '$lib/components/ui/badge';
 	import * as Card from '$lib/components/ui/card';
 	import StatusBadge from '$lib/components/dashboard/StatusBadge.svelte';
-	import { findProject, type ProjectStatus } from '$lib/mock/projects';
-	import { findEngineersByProjectId } from '$lib/mock/engineers';
+	import type { ProjectStatus } from '$lib/types';
 
+	let { data } = $props();
 	const id = $derived(page.params.id);
-	const project = $derived(id ? findProject(id) : undefined);
-	const assignedEngineers = $derived(id ? findEngineersByProjectId(id) : []);
+	const project = $derived(data.project);
+	const assignedEngineers = $derived(data.engineers);
 
 	const statusStyles: Record<ProjectStatus, string> = {
 		商談中: 'bg-amber-50 text-amber-700 border-amber-200',

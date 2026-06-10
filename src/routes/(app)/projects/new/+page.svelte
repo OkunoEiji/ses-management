@@ -3,20 +3,21 @@
 	import ArrowLeft from '@lucide/svelte/icons/arrow-left';
 	import { Button } from '$lib/components/ui/button';
 	import ProjectForm from '$lib/components/projects/ProjectForm.svelte';
-	import { projects, type Project } from '$lib/mock/projects';
+	import { submitJsonAction } from '$lib/api/submit';
+	import type { Project } from '$lib/types';
 
 	let isSubmitting = $state(false);
 
-	function handleSubmit(data: Omit<Project, 'id'>) {
+	async function handleSubmit(formData: Omit<Project, 'id'>) {
 		isSubmitting = true;
-
-		const newProject: Project = {
-			id: crypto.randomUUID(),
-			...data
-		};
-
-		projects.push(newProject);
-		goto(`/projects/${newProject.id}`);
+		try {
+			await submitJsonAction(formData);
+		} catch (e) {
+			console.error(e);
+			alert('保存に失敗しました');
+		} finally {
+			isSubmitting = false;
+		}
 	}
 </script>
 

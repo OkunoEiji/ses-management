@@ -11,9 +11,12 @@
 	import * as Table from '$lib/components/ui/table';
 	import * as Dialog from '$lib/components/ui/dialog';
 	import ListPageLayout from '$lib/components/layout/ListPageLayout.svelte';
-	import { projects as initialProjects, type Project, type ProjectStatus } from '$lib/mock/projects';
+	import { invalidateAll } from '$app/navigation';
+	import { submitDeleteAction } from '$lib/api/submit';
+	import type { Project, ProjectStatus } from '$lib/types';
 
-	let projectList = $state<Project[]>(initialProjects);
+	let { data } = $props();
+	let projectList = $derived(data.projects);
 
 	let deleteTarget = $state<Project | null>(null);
 	let deleteDialogOpen = $state(false);
@@ -38,10 +41,11 @@
 		deleteTarget = null;
 	}
 
-	function handleDelete() {
+	async function handleDelete() {
 		if (!deleteTarget) return;
-		projectList = projectList.filter((p) => p.id !== deleteTarget!.id);
+		await submitDeleteAction(deleteTarget.id);
 		closeDelete();
+		await invalidateAll();
 	}
 </script>
 

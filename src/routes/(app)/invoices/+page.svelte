@@ -11,12 +11,16 @@
 	import * as Table from '$lib/components/ui/table';
 	import * as Dialog from '$lib/components/ui/dialog';
 	import ListPageLayout from '$lib/components/layout/ListPageLayout.svelte';
-	import { invoices, type Invoice, type InvoiceStatus } from '$lib/mock/invoices';
-	import { enrichInvoice, resolveDueDate } from '$lib/mock/invoice-utils';
+	import { invalidateAll } from '$app/navigation';
+	import { submitDeleteAction } from '$lib/api/submit';
+	import type { Invoice, InvoiceStatus } from '$lib/types';
+	import { enrichInvoice, resolveDueDate } from '$lib/utils/invoice-utils';
 	import { daysUntil, formatYen } from '$lib/utils';
 
+	let { data } = $props();
 	let deleteTarget = $state<Invoice | null>(null);
 	let deleteDialogOpen = $state(false);
+	const invoices = $derived(data.invoices);
 
 	const statusStyles: Record<InvoiceStatus, string> = {
 		下書き: 'bg-gray-100 text-gray-700 border-gray-200',
@@ -55,11 +59,11 @@
 		deleteTarget = null;
 	}
 
-	function handleDelete() {
+	async function handleDelete() {
 		if (!deleteTarget) return;
-		const idx = invoices.findIndex((inv) => inv.id === deleteTarget!.id);
-		if (idx >= 0) invoices.splice(idx, 1);
+		await submitDeleteAction(deleteTarget.id);
 		closeDelete();
+		await invalidateAll();
 	}
 
 	function dueDateMeta(inv: Invoice) {
@@ -115,7 +119,7 @@
 				</Table.Header>
 				<Table.Body>
 					{#each sortedInvoices as inv (inv.id)}
-						{@const display = enrichInvoice(inv)}
+						{@const display = enrichInvoice(inv, { lookup: data.lookup })}
 						{@const status = displayStatus(display.status)}
 						{@const meta = dueDateMeta(display)}
 						<Table.Row

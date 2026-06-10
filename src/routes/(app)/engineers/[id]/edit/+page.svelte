@@ -4,24 +4,26 @@
 	import ArrowLeft from '@lucide/svelte/icons/arrow-left';
 	import { Button } from '$lib/components/ui/button';
 	import EngineerForm from '$lib/components/engineers/EngineerForm.svelte';
-	import { engineers, findEngineer, type Engineer } from '$lib/mock/engineers';
+	import { submitJsonAction } from '$lib/api/submit';
+	import type { Engineer } from '$lib/types';
 
+	let { data } = $props();
 	const formId = 'engineer-edit-form';
 	const id = $derived(page.params.id);
-	const engineer = $derived(id ? findEngineer(id) : undefined);
+	const engineer = $derived(data.engineer);
 
 	let isSubmitting = $state(false);
 
-	function handleSubmit(data: Omit<Engineer, 'id'>) {
-		if (!id) return;
+	async function handleSubmit(formData: Omit<Engineer, 'id'>) {
 		isSubmitting = true;
-
-		const index = engineers.findIndex((e) => e.id === id);
-		if (index >= 0) {
-			engineers[index] = { id, ...data };
+		try {
+			await submitJsonAction(formData);
+		} catch (e) {
+			console.error(e);
+			alert('保存に失敗しました');
+		} finally {
+			isSubmitting = false;
 		}
-
-		goto(`/engineers/${id}`);
 	}
 </script>
 
@@ -48,6 +50,7 @@
 			{#key engineer.id}
 				<EngineerForm
 					{formId}
+					projects={data.projects}
 					initialData={engineer}
 					onSubmit={handleSubmit}
 					{isSubmitting}

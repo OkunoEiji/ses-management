@@ -4,30 +4,26 @@
 	import ArrowLeft from '@lucide/svelte/icons/arrow-left';
 	import { Button } from '$lib/components/ui/button';
 	import InvoiceForm from '$lib/components/invoices/InvoiceForm.svelte';
-	import { invoices, findInvoice, type InvoiceInput } from '$lib/mock/invoices';
-	import { applyStatusTimestamps, resolveEngineerName } from '$lib/mock/invoice-utils';
+	import { submitJsonAction } from '$lib/api/submit';
+	import { resolveEngineerName } from '$lib/utils/invoice-utils';
+	import type { InvoiceInput } from '$lib/types';
 
+	let { data } = $props();
 	const id = $derived(page.params.id);
-	const invoice = $derived(id ? findInvoice(id) : undefined);
+	const invoice = $derived(data.invoice);
 
 	let isSubmitting = $state(false);
 
-	function handleSubmit(data: InvoiceInput) {
-		if (!id || !invoice) return;
+	async function handleSubmit(formData: InvoiceInput) {
 		isSubmitting = true;
-
-		const timestamps = applyStatusTimestamps(data, invoice);
-		const index = invoices.findIndex((inv) => inv.id === id);
-		if (index >= 0) {
-			invoices[index] = {
-				id,
-				...data,
-				created_at: invoice.created_at ?? timestamps.updated_at,
-				...timestamps
-			};
+		try {
+			await submitJsonAction(formData);
+		} catch (e) {
+			console.error(e);
+			alert('保存に失敗しました');
+		} finally {
+			isSubmitting = false;
 		}
-
-		goto(`/invoices/${id}`);
 	}
 </script>
 
@@ -40,7 +36,7 @@
 			<h1 class="text-base font-bold tracking-tight">請求書編集</h1>
 			{#if invoice}
 				<p class="truncate text-[11px] text-muted-foreground">
-					{invoice.invoice_number ?? resolveEngineerName(invoice)}
+					{invoice.invoice_number ?? resolveEngineerName(invoice, { engineerNames: new Map(data.engineers.map((e) => [e.id, e.name])) })}
 				</p>
 			{/if}
 		</div>
@@ -53,6 +49,9 @@
 		{:else}
 			{#key invoice.id}
 				<InvoiceForm
+					engineers={data.engineers}
+					projects={data.projects}
+					orders={data.orders}
 					initialData={invoice}
 					onSubmit={handleSubmit}
 					{isSubmitting}
