@@ -10,6 +10,7 @@
 	import * as Card from '$lib/components/ui/card';
 	import * as Table from '$lib/components/ui/table';
 	import * as Dialog from '$lib/components/ui/dialog';
+	import ListPageLayout from '$lib/components/layout/ListPageLayout.svelte';
 	import { invoices, type Invoice, type InvoiceStatus } from '$lib/mock/invoices';
 	import { enrichInvoice, resolveDueDate } from '$lib/mock/invoice-utils';
 	import { daysUntil, formatYen } from '$lib/utils';
@@ -77,18 +78,20 @@
 	}
 </script>
 
-<div class="space-y-5 p-6">
-	<div class="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-		<div>
-			<h1 class="text-2xl font-bold tracking-tight">請求書一覧</h1>
-			<p class="mt-1 text-sm text-muted-foreground">{invoices.length}件の請求書</p>
+<ListPageLayout>
+	{#snippet toolbar()}
+		<div class="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+			<div>
+				<h1 class="text-2xl font-bold tracking-tight">請求書一覧</h1>
+				<p class="mt-1 text-sm text-muted-foreground">{invoices.length}件の請求書</p>
+			</div>
+			<Button class="gap-2" onclick={() => goto('/invoices/new')}>
+				<Plus class="h-4 w-4" />
+				新規作成
+			</Button>
 		</div>
-		<Button class="gap-2" onclick={() => goto('/invoices/new')}>
-			<Plus class="h-4 w-4" />
-			新規作成
-		</Button>
-	</div>
-
+	{/snippet}
+	{#snippet children()}
 	{#if invoices.length === 0}
 		<Card.Root class="p-16 text-center text-muted-foreground">
 			<FileText class="mx-auto mb-3 h-10 w-10 opacity-30" />
@@ -200,8 +203,10 @@
 			</Table.Root>
 		</div>
 	{/if}
+	{/snippet}
+</ListPageLayout>
 
-	<Dialog.Root bind:open={deleteDialogOpen}>
+<Dialog.Root bind:open={deleteDialogOpen}>
 		<Dialog.Content>
 			<Dialog.Header>
 				<Dialog.Title>請求書を削除しますか？</Dialog.Title>
@@ -212,5 +217,4 @@
 				<Button variant="destructive" onclick={handleDelete}>削除する</Button>
 			</Dialog.Footer>
 		</Dialog.Content>
-	</Dialog.Root>
-</div>
+</Dialog.Root>

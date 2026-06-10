@@ -16,6 +16,7 @@
 	import { Input } from '$lib/components/ui/input';
 	import * as Card from '$lib/components/ui/card';
 	import * as Dialog from '$lib/components/ui/dialog';
+	import ListPageLayout from '$lib/components/layout/ListPageLayout.svelte';
 	import {
 		orderSheets as initialOrders,
 		type Order,
@@ -140,34 +141,34 @@
 	}
 </script>
 
-<div class="space-y-5 p-6">
-	<div class="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-		<div>
-			<h1 class="text-2xl font-bold tracking-tight">注文書一覧</h1>
-			<p class="mt-1 text-sm text-muted-foreground">{orderList.length}件</p>
+<ListPageLayout>
+	{#snippet toolbar()}
+		<div class="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+			<div>
+				<h1 class="text-2xl font-bold tracking-tight">注文書一覧</h1>
+				<p class="mt-1 text-sm text-muted-foreground">{orderList.length}件</p>
+			</div>
+			<Button class="gap-2" onclick={() => goto('/orders/new')}>
+				<Plus class="h-4 w-4" />
+				新規作成
+			</Button>
 		</div>
-		<Button class="gap-2" onclick={() => goto('/orders/new')}>
-			<Plus class="h-4 w-4" />
-			新規作成
-		</Button>
-	</div>
 
-	<div class="flex flex-wrap gap-3">
-		<div class="relative min-w-[200px] flex-1">
-			<Search class="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-			<Input class="pl-9" placeholder="案件名・会社名・要員名・番号で検索" bind:value={search} />
+		<div class="flex flex-wrap gap-3">
+			<div class="relative min-w-[200px] flex-1">
+				<Search class="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+				<Input class="pl-9" placeholder="案件名・会社名・要員名・番号で検索" bind:value={search} />
+			</div>
+			<select class={selectClass} bind:value={filterStatus}>
+				<option value="all">状態：全て</option>
+				<option value="下書き">下書き</option>
+				<option value="送付済み">送付済み</option>
+				<option value="承認済み">承認済み</option>
+			</select>
 		</div>
-		<select class={selectClass} bind:value={filterStatus}>
-			<option value="all">状態：全て</option>
-			<option value="下書き">下書き</option>
-			<option value="送付済み">送付済み</option>
-			<option value="承認済み">承認済み</option>
-		</select>
-	</div>
 
-	<!-- Tabs -->
-	<div class="space-y-4">
-		<div class="inline-flex h-10 items-center gap-1 rounded-lg bg-muted p-1">
+		<div class="space-y-4">
+			<div class="inline-flex h-10 items-center gap-1 rounded-lg bg-muted p-1">
 			<button
 				type="button"
 				class={cn(
@@ -198,25 +199,27 @@
 			</button>
 		</div>
 
-		{#if activeTab === 'estimate'}
-			<p class="text-xs text-muted-foreground">
-				上位会社への見積書 — 請求単価・請求条件を使用
-			</p>
-		{:else}
-			<p class="text-xs text-muted-foreground">
-				所属会社への注文書 — 支払単価・支払条件を使用（支払単価未設定の案件は表示されません）
-			</p>
-		{/if}
-
+			{#if activeTab === 'estimate'}
+				<p class="text-xs text-muted-foreground">
+					上位会社への見積書 — 請求単価・請求条件を使用
+				</p>
+			{:else}
+				<p class="text-xs text-muted-foreground">
+					所属会社への注文書 — 支払単価・支払条件を使用（支払単価未設定の案件は表示されません）
+				</p>
+			{/if}
+		</div>
+	{/snippet}
+	{#snippet children()}
 		{#if activeList.length === 0}
-			<Card.Root class="p-16 text-center text-muted-foreground">
+			<Card.Root class="border border-border p-16 text-center text-muted-foreground shadow-none ring-0">
 				<FileCheck class="mx-auto mb-3 h-10 w-10 opacity-30" />
 				<p class="font-medium">データがありません</p>
 			</Card.Root>
 		{:else}
 			<div class="space-y-4">
 				{#each Object.entries(grouped) as [projName, projOrders] (projName)}
-					<Card.Root>
+					<Card.Root class="border border-border shadow-none ring-0">
 						<Card.Header class="px-5 pt-4 pb-3">
 							<div class="flex items-center justify-between">
 								<Card.Title
@@ -340,9 +343,10 @@
 				{/each}
 			</div>
 		{/if}
-	</div>
+	{/snippet}
+</ListPageLayout>
 
-	<Dialog.Root bind:open={deleteDialogOpen}>
+<Dialog.Root bind:open={deleteDialogOpen}>
 		<Dialog.Content>
 			<Dialog.Header>
 				<Dialog.Title>削除しますか？</Dialog.Title>
@@ -355,5 +359,4 @@
 				<Button variant="destructive" onclick={handleDelete}>削除する</Button>
 			</Dialog.Footer>
 		</Dialog.Content>
-	</Dialog.Root>
-</div>
+</Dialog.Root>

@@ -10,6 +10,7 @@
 	import * as Card from '$lib/components/ui/card';
 	import * as Table from '$lib/components/ui/table';
 	import * as Dialog from '$lib/components/ui/dialog';
+	import ListPageLayout from '$lib/components/layout/ListPageLayout.svelte';
 	import { projects as initialProjects, type Project, type ProjectStatus } from '$lib/mock/projects';
 
 	let projectList = $state<Project[]>(initialProjects);
@@ -44,18 +45,20 @@
 	}
 </script>
 
-<div class="space-y-5 p-6">
-	<div class="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-		<div>
-			<h1 class="text-2xl font-bold tracking-tight">案件一覧</h1>
-			<p class="mt-1 text-sm text-muted-foreground">{projectList.length}件の案件</p>
+<ListPageLayout>
+	{#snippet toolbar()}
+		<div class="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+			<div>
+				<h1 class="text-2xl font-bold tracking-tight">案件一覧</h1>
+				<p class="mt-1 text-sm text-muted-foreground">{projectList.length}件の案件</p>
+			</div>
+			<Button class="gap-2" onclick={() => goto('/projects/new')}>
+				<Plus class="h-4 w-4" />
+				新規登録
+			</Button>
 		</div>
-		<Button class="gap-2" onclick={() => goto('/projects/new')}>
-			<Plus class="h-4 w-4" />
-			新規登録
-		</Button>
-	</div>
-
+	{/snippet}
+	{#snippet children()}
 	{#if projectList.length === 0}
 		<Card.Root class="p-16 text-center text-muted-foreground">
 			<Building2 class="mx-auto mb-3 h-10 w-10 opacity-30" />
@@ -144,8 +147,10 @@
 			</Table.Root>
 		</div>
 	{/if}
+	{/snippet}
+</ListPageLayout>
 
-	<Dialog.Root bind:open={deleteDialogOpen}>
+<Dialog.Root bind:open={deleteDialogOpen}>
 		<Dialog.Content>
 			<Dialog.Header>
 				<Dialog.Title>案件を削除しますか？</Dialog.Title>
@@ -158,5 +163,4 @@
 				<Button variant="destructive" onclick={handleDelete}>削除する</Button>
 			</Dialog.Footer>
 		</Dialog.Content>
-	</Dialog.Root>
-</div>
+</Dialog.Root>

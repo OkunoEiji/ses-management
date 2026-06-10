@@ -135,6 +135,17 @@
 		scrollbar-gutter: stable;
 	}
 
+	.list-page {
+		height: 100%;
+		max-height: 100%;
+		overflow: hidden;
+	}
+
+	.list-page-body {
+		overscroll-behavior: contain;
+		scrollbar-gutter: stable;
+	}
+
 	.document-form-page {
 		height: 100%;
 		max-height: 100%;

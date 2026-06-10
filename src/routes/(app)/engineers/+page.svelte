@@ -7,6 +7,7 @@
 	import * as Table from '$lib/components/ui/table';
 	import * as Dialog from '$lib/components/ui/dialog';
 	import StatusBadge from '$lib/components/dashboard/StatusBadge.svelte';
+	import ListPageLayout from '$lib/components/layout/ListPageLayout.svelte';
 	import { engineers as initialEngineers, type Engineer } from '$lib/mock/engineers';
     
     let engineerList = $state<Engineer[]>(initialEngineers);
@@ -60,38 +61,38 @@
 </script>
 
 
-<div class="space-y-5 p-6">
-	<!-- ヘッダー -->
-	<div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-		<div>
-			<h1 class="text-2xl font-bold tracking-tight">要員一覧</h1>
-			<p class="mt-1 text-sm text-muted-foreground">
-				{engineerList.length}名の要員が登録されています
-			</p>
+<ListPageLayout>
+	{#snippet toolbar()}
+		<div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+			<div>
+				<h1 class="text-2xl font-bold tracking-tight">要員一覧</h1>
+				<p class="mt-1 text-sm text-muted-foreground">
+					{engineerList.length}名の要員が登録されています
+				</p>
+			</div>
+			<Button class="gap-2" onclick={() => goto('/engineers/new')}>
+				<UserPlus class="h-4 w-4" />
+				新規登録
+			</Button>
 		</div>
-		<Button class="gap-2" onclick={() => goto('/engineers/new')}>
-			<UserPlus class="h-4 w-4" />
-			新規登録
-		</Button>
-	</div>
-	<!-- フィルター -->
-	<div class="grid gap-3 sm:grid-cols-3">
-		<Input placeholder="名前・スキルで検索" bind:value={search} />
-		<select class={selectClass} bind:value={statusFilter}>
-			<option value="all">ステータス: すべて</option>
-			<option value="待機中">待機中</option>
-			<option value="商談中">商談中</option>
-			<option value="稼働中">稼働中</option>
-			<option value="退場予定">退場予定</option>
-		</select>
-		<select class={selectClass} bind:value={typeFilter}>
-			<option value="all">種別: すべて</option>
-			<option value="自社">自社</option>
-			<option value="BP">BP</option>
-			<option value="フリーランス">フリーランス</option>
-		</select>
-	</div>
-	<!-- テーブル -->
+		<div class="grid gap-3 sm:grid-cols-3">
+			<Input placeholder="名前・スキルで検索" bind:value={search} />
+			<select class={selectClass} bind:value={statusFilter}>
+				<option value="all">ステータス: すべて</option>
+				<option value="待機中">待機中</option>
+				<option value="商談中">商談中</option>
+				<option value="稼働中">稼働中</option>
+				<option value="退場予定">退場予定</option>
+			</select>
+			<select class={selectClass} bind:value={typeFilter}>
+				<option value="all">種別: すべて</option>
+				<option value="自社">自社</option>
+				<option value="BP">BP</option>
+				<option value="フリーランス">フリーランス</option>
+			</select>
+		</div>
+	{/snippet}
+	{#snippet children()}
 	<div class="rounded-xl border">
 		<Table.Root>
 			<Table.Header>
@@ -157,8 +158,10 @@
 			</Table.Body>
 		</Table.Root>
 	</div>
-	<!-- 削除確認 -->
-	<Dialog.Root bind:open={deleteDialogOpen}>
+	{/snippet}
+</ListPageLayout>
+
+<Dialog.Root bind:open={deleteDialogOpen}>
 		<Dialog.Content>
 			<Dialog.Header>
 				<Dialog.Title>要員を削除しますか？</Dialog.Title>
@@ -171,5 +174,4 @@
 				<Button variant="destructive" onclick={handleDelete}>削除する</Button>
 			</Dialog.Footer>
 		</Dialog.Content>
-	</Dialog.Root>
-</div>
+</Dialog.Root>
