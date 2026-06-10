@@ -33,7 +33,7 @@
 		{ path: '/projects', label: '案件一覧', icon: Briefcase },
 		{ path: '/orders', label: '注文書一覧', icon: ClipboardList },
 		{ path: '/invoices', label: '請求書一覧', icon: FileText },
-		{ path: '/settings', label: '会社設定', icon: Settings }
+		{ path: '/settings', label: '会社情報設定', icon: Settings }
 	];
 
 	function handleNavClick() {
