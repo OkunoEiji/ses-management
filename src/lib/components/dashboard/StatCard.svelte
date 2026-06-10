@@ -15,13 +15,13 @@
 </script>
 
 <div class="rounded-xl border bg-card p-6 shadow-xs">
-	<div class="flex items-center justify-between">
+	<div class="flex items-center gap-4">
+		<div class={`rounded-lg p-3 ${accent}`}>
+			<Icon class="size-5" />
+		</div>
 		<div>
 			<p class="text-sm text-muted-foreground">{label}</p>
 			<p class="text-3xl font-bold">{value}</p>
-		</div>
-		<div class={`rounded-lg p-3 ${accent}`}>
-			<Icon class="size-5" />
 		</div>
 	</div>
 </div>

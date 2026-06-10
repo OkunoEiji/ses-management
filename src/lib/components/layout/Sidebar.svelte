@@ -79,7 +79,7 @@
 				class={cn(
 					'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200',
 					isActive
-						? 'bg-accent text-accent-foreground'
+						? 'bg-primary/10 text-primary'
 						: 'text-muted-foreground hover:bg-secondary hover:text-foreground'
 				)}
 			>
