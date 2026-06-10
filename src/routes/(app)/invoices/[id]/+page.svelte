@@ -7,11 +7,21 @@
 	import { Button } from '$lib/components/ui/button';
 	import { Badge } from '$lib/components/ui/badge';
 	import InvoicePreview from '$lib/components/invoices/InvoicePreview.svelte';
+	import InvoiceSendDialog from '$lib/components/invoices/InvoiceSendDialog.svelte';
 	import { findInvoice, type InvoiceStatus } from '$lib/mock/invoices';
-	import { applyStatusTimestamps, toInvoicePreview } from '$lib/mock/invoice-utils';
+	import {
+		applyStatusTimestamps,
+		INVOICE_PREVIEW_PAGE_HEIGHT_PX,
+		INVOICE_PREVIEW_PAGE_WIDTH_PX,
+		toInvoicePreview
+	} from '$lib/mock/invoice-utils';
 	import { companySettings } from '$lib/stores/company-settings.svelte';
+	import { findProject } from '$lib/mock/projects';
 	import { today } from '$lib/utils';
 	import Download from '@lucide/svelte/icons/download';
+
+	const previewPageWidth = `${INVOICE_PREVIEW_PAGE_WIDTH_PX}px`;
+	const previewPageHeight = `${INVOICE_PREVIEW_PAGE_HEIGHT_PX}px`;
 
 	const id = $derived(page.params.id);
 	const invoice = $derived(id ? findInvoice(id) : undefined);
@@ -19,6 +29,9 @@
 
 	let pdfRef = $state<HTMLElement | null>(null);
 	let downloading = $state(false);
+	let sendDialogOpen = $state(false);
+
+	const project = $derived(invoice?.project_id ? findProject(invoice.project_id) : undefined);
 
 	const statusStyles: Record<InvoiceStatus, string> = {
 		下書き: 'bg-gray-100 text-gray-700 border-gray-200',
@@ -31,13 +44,22 @@
 		return status ?? '下書き';
 	}
 
-	function markSent() {
+	const isMailSent = $derived(!!preview?.sent_at);
+	const isSendDisabled = $derived(displayStatus(preview?.status) === '下書き');
+
+	function handleSent() {
 		if (!invoice) return;
 		const now = today();
-		const timestamps = applyStatusTimestamps({ status: '送付済み' }, invoice, now);
-		invoice.status = '送付済み';
-		invoice.sent_at = timestamps.sent_at;
-		invoice.updated_at = timestamps.updated_at;
+		if (!invoice.sent_at) {
+			const timestamps = applyStatusTimestamps({ status: '送付済み' }, invoice, now);
+			invoice.sent_at = timestamps.sent_at;
+			if (!invoice.status || invoice.status === '下書き') {
+				invoice.status = '送付済み';
+			}
+			invoice.updated_at = timestamps.updated_at;
+		} else {
+			invoice.updated_at = now;
+		}
 	}
 
 	function markPaid() {
@@ -66,7 +88,7 @@
 	}
 </script>
 
-<div class="space-y-6 p-6">
+<div class="document-form-page flex h-full min-h-0 flex-col overflow-hidden p-3">
 	{#if !invoice || !preview}
 		<div class="py-16 text-center text-muted-foreground">
 			<p>請求書が見つかりません</p>
@@ -75,46 +97,105 @@
 	{:else}
 		{@const status = displayStatus(preview.status)}
 
-		<div class="flex flex-wrap items-center gap-3">
-			<Button variant="ghost" size="icon" onclick={() => history.back()}>
-				<ArrowLeft class="h-5 w-5" />
+		<header class="flex shrink-0 flex-wrap items-center gap-2 border-b border-border pb-2">
+			<Button variant="ghost" size="icon" class="h-7 w-7" onclick={() => history.back()}>
+				<ArrowLeft class="h-4 w-4" />
 			</Button>
 			<div class="min-w-0 flex-1">
-				<div class="flex flex-wrap items-center gap-3">
-					<h1 class="text-2xl font-bold tracking-tight">
+				<div class="flex flex-wrap items-center gap-2">
+					<h1 class="truncate text-base font-bold tracking-tight">
 						{preview.invoice_number ?? '請求書'}
 					</h1>
 					<Badge variant="outline" class={statusStyles[status]}>{status}</Badge>
 				</div>
-				<p class="mt-0.5 text-sm text-muted-foreground">
+				<p class="truncate text-[11px] text-muted-foreground">
 					{preview.client_name}　{preview.billing_month}分　作業者: {preview.engineer_name || '—'}
 				</p>
 			</div>
-			<div class="flex flex-wrap gap-2">
-				<Button variant="outline" class="gap-2" onclick={() => goto(`/invoices/${id}/edit`)}>
-					<Pencil class="h-4 w-4" />
+			<div class="flex shrink-0 flex-wrap gap-1.5">
+				<Button variant="outline" size="sm" class="h-7 gap-1 px-2 text-xs" onclick={() => goto(`/invoices/${id}/edit`)}>
+					<Pencil class="h-3.5 w-3.5" />
 					編集
 				</Button>
-				<Button class="gap-2" onclick={handleDownloadPdf} disabled={downloading}>
-					<Download class="h-4 w-4" />
+				<Button
+					variant="outline"
+					size="sm"
+					class="h-7 gap-1 px-2 text-xs"
+					onclick={handleDownloadPdf}
+					disabled={downloading}
+				>
+					<Download class="h-3.5 w-3.5" />
 					{downloading ? 'PDF生成中...' : 'PDFダウンロード'}
 				</Button>
-				{#if status === '下書き'}
-					<Button class="gap-2" onclick={markSent}>
-						<Send class="h-4 w-4" />
-						送付済みにする
+				<Button
+					variant={isMailSent ? 'secondary' : 'default'}
+					size="sm"
+					class="h-7 gap-1 px-2 text-xs"
+					disabled={isSendDisabled}
+					onclick={() => (sendDialogOpen = true)}
+				>
+					<Send class="h-3.5 w-3.5" />
+					送付する
+				</Button>
+				{#if status === '送付済み' || status === '入金確認中'}
+					<Button variant="secondary" size="sm" class="h-7 gap-1 px-2 text-xs" onclick={markPaid}>
+						入金済み
 					</Button>
 				{/if}
-				{#if status === '送付済み' || status === '入金確認中'}
-					<Button variant="secondary" onclick={markPaid}>入金済みにする</Button>
-				{/if}
+			</div>
+		</header>
+
+		<div
+			class="invoice-detail-screen flex min-h-0 flex-1 flex-col overflow-hidden pt-2"
+			style="--invoice-page-width: {previewPageWidth}; --invoice-page-height: {previewPageHeight}"
+		>
+			<div
+				class="box-border min-h-0 flex-1 overflow-hidden rounded-lg border border-border bg-muted/30 p-1.5"
+			>
+				<div class="invoice-detail-preview-scaler mx-auto">
+					<div class="invoice-detail-preview-scaler-inner">
+						<InvoicePreview bind:ref={pdfRef} invoice={preview} />
+					</div>
+				</div>
 			</div>
 		</div>
 
-		<div class="overflow-x-auto rounded-xl border border-border bg-muted/30 p-4">
-			<div class="mx-auto w-fit">
-				<InvoicePreview bind:ref={pdfRef} invoice={preview} />
-			</div>
-		</div>
+		<InvoiceSendDialog
+			bind:open={sendDialogOpen}
+			{preview}
+			invoiceId={invoice.id}
+			pdfRef={pdfRef}
+			clientContactName={project?.client_contact_name}
+			clientContactEmail={project?.client_contact_email}
+			onSent={handleSent}
+		/>
 	{/if}
 </div>
+
+<style>
+	.invoice-detail-screen {
+		--invoice-detail-preview-chrome: 7.5rem;
+		--preview-scale: min(
+			1,
+			calc((100dvh - var(--invoice-detail-preview-chrome)) / var(--invoice-page-height))
+		);
+	}
+
+	@media (min-width: 1280px) {
+		.invoice-detail-screen {
+			--invoice-detail-preview-chrome: 7rem;
+		}
+	}
+
+	.invoice-detail-preview-scaler {
+		width: calc(var(--invoice-page-width) * var(--preview-scale));
+		height: calc(var(--invoice-page-height) * var(--preview-scale));
+		overflow: hidden;
+	}
+
+	.invoice-detail-preview-scaler-inner {
+		width: var(--invoice-page-width);
+		transform: scale(var(--preview-scale));
+		transform-origin: top left;
+	}
+</style>

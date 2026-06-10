@@ -61,7 +61,9 @@ export const companySettings = sqliteTable('company_settings', {
 	bank_branch_code: text('bank_branch_code'),
 	bank_account_type: text('bank_account_type').default('普通預金'),
 	bank_account_name: text('bank_account_name').notNull(),
-	bank_account_number: text('bank_account_number').notNull()
+	bank_account_number: text('bank_account_number').notNull(),
+	sender_email_primary: text('sender_email_primary'),
+	sender_email_secondary: text('sender_email_secondary')
 });
 
 export const orders = sqliteTable('orders', {
@@ -133,4 +135,20 @@ export const invoices = sqliteTable('invoices', {
 	updated_at: text('updated_at'),
 	sent_at: text('sent_at'),
 	paid_at: text('paid_at')
+});
+
+export const invoiceSendLogs = sqliteTable('invoice_send_logs', {
+	id: text('id')
+		.primaryKey()
+		.$defaultFn(() => crypto.randomUUID()),
+	invoice_id: text('invoice_id')
+		.notNull()
+		.references(() => invoices.id),
+	from_email: text('from_email').notNull(),
+	to_email: text('to_email').notNull(),
+	subject: text('subject').notNull(),
+	body: text('body').notNull(),
+	status: text('status').notNull().default('sent'),
+	error_message: text('error_message'),
+	sent_at: text('sent_at').notNull().$defaultFn(() => new Date().toISOString())
 });

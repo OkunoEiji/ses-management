@@ -100,6 +100,33 @@
 			</Card.Content>
 		</Card.Root>
 
+		<!-- メール送付 -->
+		<Card.Root>
+			<Card.Header>
+				<Card.Title>メール送付</Card.Title>
+			</Card.Header>
+			<Card.Content class="space-y-4">
+				<div class="space-y-1">
+					<label class="text-sm font-medium" for="sender_email_primary">送信元メール（1）</label>
+					<Input
+						id="sender_email_primary"
+						type="email"
+						bind:value={form.sender_email_primary}
+						placeholder="m.okuno@nextmake.co.jp"
+					/>
+				</div>
+				<div class="space-y-1">
+					<label class="text-sm font-medium" for="sender_email_secondary">送信元メール（2）</label>
+					<Input
+						id="sender_email_secondary"
+						type="email"
+						bind:value={form.sender_email_secondary}
+						placeholder="r.kuwata@nextmake.co.jp"
+					/>
+				</div>
+			</Card.Content>
+		</Card.Root>
+
 		<div class="flex items-center gap-3">
 			<Button type="submit">
 				{saved ? '保存しました ✓' : '保存する'}

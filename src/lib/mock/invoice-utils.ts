@@ -4,7 +4,7 @@ import { projects } from '$lib/mock/projects';
 import { calcRates } from '$lib/mock/order-utils';
 import { today } from '$lib/utils';
 
-/** 自社情報（請求書原本の発行元・振込先） */
+/** 自社情報（請求書原本の発行元・振込先・メール送付） */
 export type CompanySettings = {
 	id: string;
 	company_name: string;
@@ -18,6 +18,8 @@ export type CompanySettings = {
 	bank_account_type: string;
 	bank_account_name: string;
 	bank_account_number: string;
+	sender_email_primary: string;
+	sender_email_secondary: string;
 };
 
 export const DEFAULT_COMPANY_SETTINGS: CompanySettings = {
@@ -32,8 +34,52 @@ export const DEFAULT_COMPANY_SETTINGS: CompanySettings = {
 	bank_branch_code: '177',
 	bank_account_type: '普通預金',
 	bank_account_name: 'ｶﾌﾞｼｷｶｲｼｬﾈｸｽﾄﾒｲｸ',
-	bank_account_number: '1969203'
+	bank_account_number: '1969203',
+	sender_email_primary: 'billing@nextmake.co.jp',
+	sender_email_secondary: 'info@nextmake.co.jp'
 };
+
+export type InvoiceEmailDefaults = {
+	fromEmail: string;
+	toEmail: string;
+	subject: string;
+	body: string;
+};
+
+/** 請求書メール送付フォームのデフォルト値を生成 */
+export function buildInvoiceEmailDefaults(
+	preview: InvoicePreviewData,
+	options?: {
+		clientContactName?: string | null;
+		clientContactEmail?: string | null;
+	}
+): InvoiceEmailDefaults {
+	const contactName = options?.clientContactName?.trim();
+	const addressee = contactName ? `${preview.client_name} ${contactName}` : preview.client_name;
+	const dueDate = resolveDueDate(preview);
+
+	const subject = `【請求書】${preview.client_name}様 ${preview.billing_month}分`;
+
+	const body = `${addressee} 様
+
+お世話になっております。
+${preview.company.company_name}です。
+
+${preview.billing_month}分の請求書をお送りいたします。
+ご確認のほど、よろしくお願いいたします。
+
+請求金額：¥${preview.total_amount.toLocaleString()}（税込）
+支払期限：${dueDate}
+
+よろしくお願いいたします。`;
+
+	return {
+		fromEmail: preview.company.sender_email_primary,
+		toEmail: options?.clientContactEmail?.trim() ?? '',
+		subject,
+		body
+	};
+}
 
 export type InvoiceCalculations = {
 	deduction_hours: number;
