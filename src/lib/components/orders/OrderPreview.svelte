@@ -1,4 +1,6 @@
 <script lang="ts">
+	import CompanyAddressWithSeal from '$lib/components/documents/CompanyAddressWithSeal.svelte';
+	import { COMPANY_ADDRESS_CONTAINER_STYLE } from '$lib/components/documents/company-address-style';
 	import type { Order } from '$lib/types';
 	import {
 		ORDER_PREVIEW_PAGE_HEIGHT_PX,
@@ -163,12 +165,10 @@
 			{/if}
 		</div>
 
-		<div style="margin-left:auto;margin-right:20px;font-weight:700;font-size:13px;line-height:2;text-align:left;">
-			<p style="margin:0;font-size:15px;">{cs.company_name}</p>
-			<p style="margin:0;">〒{cs.postal_code}</p>
-			<p style="margin:0;">{cs.address}</p>
-			{#if cs.building}<p style="margin:0;">{cs.building}</p>{/if}
-		</div>
+		<CompanyAddressWithSeal
+			company={cs}
+			containerStyle={COMPANY_ADDRESS_CONTAINER_STYLE}
+		/>
 	</div>
 
 	<!-- 発注金額 -->
@@ -297,32 +297,42 @@
 
 	<!-- 特記事項 -->
 	<div style="margin-top:20px;">
-		<p style="font-weight:500;font-size:14px;border-bottom:1px solid;padding-bottom:1px;padding-top:40px;">特記事項</p>
-		<table style="width:100%;border-collapse:collapse;">
+		<p
+			style="margin:0;font-weight:500;font-size:14px;border-bottom:1px solid;padding-bottom:1px;padding-top:40px;"
+		>
+			特記事項
+		</p>
+		<table
+			style="width:100%;border-collapse:collapse;margin:0;border:1px solid;border-top:none;"
+		>
 			<tbody>
 				<tr>
-					<td style="border:1px solid;border-top:none;padding-top:10px;font-size:12px;">
+					<td style="border:none;border-bottom:1px solid;padding-top:10px;font-size:12px;">
 						※支払日が金融機関の休日にあたる場合は、翌営業日となります。（振込み手数料は差し引いてお支払い致します。）
 					</td>
 				</tr>
 				<tr>
-					<td style="border:1px solid;border-top:none;padding-top:10px;font-size:12px;">
+					<td style="border:none;border-bottom:1px solid;padding-top:10px;font-size:12px;">
 						※機密保護の漏洩保護に関して注意を怠り事故を起こした場合、ペナルティー等の処分を受入れるものとします。
 					</td>
 				</tr>
 				<tr>
-					<td style="border:1px solid;border-top:none;padding-top:10px;font-size:12px;">
+					<td style="border:none;border-bottom:1px solid;padding-top:10px;font-size:12px;">
 						※受注側の過失により（勤怠不良、勤務態度不良、成果物の不良）途中終了する場合がございます。
 					</td>
 				</tr>
 				<tr>
-					<td style="border:1px solid;border-top:none;padding-left:12px;font-size:12px;">
+					<td
+						style="border:none;{o.notes
+							? 'border-bottom:1px solid;'
+							: ''}padding-left:12px;font-size:12px;"
+					>
 						（別途協議させて頂きます。）
 					</td>
 				</tr>
 				{#if o.notes}
 					<tr>
-						<td style="border:1px solid;border-top:none;padding-top:10px;padding-left:12px;font-size:12px;">
+						<td style="border:none;padding-top:10px;padding-left:12px;font-size:12px;">
 							{o.notes}
 						</td>
 					</tr>

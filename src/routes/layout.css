@@ -128,6 +128,10 @@
 		@apply font-sans;
 		scrollbar-gutter: stable;
 	}
+	/* html2canvas: Tailwind preflight の img{display:block} だと PDF 化時に文字が下にずれる */
+	img {
+		@apply inline-block;
+	}
 }
 
 @layer components {

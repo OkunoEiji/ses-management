@@ -1,4 +1,6 @@
 <script lang="ts">
+	import CompanyAddressWithSeal from '$lib/components/documents/CompanyAddressWithSeal.svelte';
+	import { INVOICE_ADDRESS_CONTAINER_STYLE } from '$lib/components/documents/company-address-style';
 	import type { InvoicePreviewData } from '$lib/utils/invoice-utils';
 	import {
 		buildInvoiceLineRows,
@@ -57,11 +59,18 @@
 	);
 	const dueDateStr = $derived(formatJapaneseDate(resolveDueDate(invoice)));
 
-	const thStyle = `border:${border};padding:4px 6px;text-align:center;font-weight:700;background:${headBg};font-size:13px;`;
-	const tdStyle = `border:${border};padding:5px 8px;font-size:13px;height:27px;vertical-align:middle;`;
+	const cellBox = 'box-sizing:border-box;';
+	const thStyle = `border:${border};padding:4px 6px;text-align:center;font-weight:700;background:${headBg};font-size:13px;height:27px;max-height:27px;line-height:19px;vertical-align:middle;${cellBox}`;
+	const tdStyle = `border:${border};padding:4px 8px;font-size:13px;height:27px;max-height:27px;line-height:19px;vertical-align:middle;overflow:hidden;${cellBox}`;
+	const trStyle = `height:27px;max-height:27px;`;
 </script>
 
-<div bind:this={ref} style={rootStyle}>
+<div
+	bind:this={ref}
+	style={rootStyle}
+	data-pdf-width={INVOICE_PREVIEW_PAGE_WIDTH_PX}
+	data-pdf-height={INVOICE_PREVIEW_PAGE_HEIGHT_PX}
+>
 	<!-- ヘッダー上段: 左=グレー帯+タイトル / 右=日付・請求No・登録番号 -->
 	<div style="display:flex;justify-content:space-between;align-items:flex-start;">
 		<div style="width:50%;">
@@ -109,14 +118,10 @@
 			</p>
 		</div>
 
-		<div style="margin-left:auto;margin-right:20px;padding-top:40px;font-weight:700;font-size:13px;line-height:2;text-align:left;">
-			<p style="margin:0;font-size:15px;">{invoice.company.company_name}</p>
-			<p style="margin:0;">〒{invoice.company.postal_code}</p>
-			<p style="margin:0;">{invoice.company.address}</p>
-			{#if invoice.company.building}
-				<p style="margin:0;">{invoice.company.building}</p>
-			{/if}
-		</div>
+		<CompanyAddressWithSeal
+			company={invoice.company}
+			containerStyle={INVOICE_ADDRESS_CONTAINER_STYLE}
+		/>
 	</div>
 
 	<!-- 合計金額 -->
@@ -129,7 +134,9 @@
 	</p>
 
 	<!-- 明細テーブル -->
-	<table style="width:100%;border-collapse:collapse;table-layout:fixed;margin-bottom:0;">
+	<table
+		style="width:100%;border-collapse:collapse;table-layout:fixed;margin-bottom:0;line-height:1.2;{cellBox}"
+	>
 		<colgroup>
 			<col style="width:60%;" />
 			<col style="width:10%;" />
@@ -137,7 +144,7 @@
 			<col style="width:15%;" />
 		</colgroup>
 		<thead>
-			<tr>
+			<tr style={trStyle}>
 				<th style={thStyle}>品番・品名</th>
 				<th style={thStyle}>数量</th>
 				<th style={thStyle}>単価</th>
@@ -146,7 +153,7 @@
 		</thead>
 		<tbody>
 			{#each lineRows as row, idx (idx)}
-				<tr style="background:{idx % 2 === 0 ? '#fff' : stripeBg};">
+				<tr style="{trStyle}background:{idx % 2 === 0 ? '#fff' : stripeBg};">
 					<td style="{tdStyle}">{row.description}</td>
 					<td style="{tdStyle};text-align:right;">{row.quantity}</td>
 					<td style="{tdStyle};text-align:right;">{fmtGridAmount(row.unitPrice)}</td>
@@ -190,18 +197,24 @@
 	</div>
 
 	<!-- お振込先（上線と下線と結合） -->
-	<table style="border-collapse:collapse;width:60%;font-weight:700;margin-top:0;">
+	<table
+		style="border-collapse:collapse;width:60%;table-layout:fixed;font-weight:700;margin-top:0;"
+	>
+		<colgroup>
+			<col style="width:200px;" />
+			<col />
+		</colgroup>
 		<tbody>
 			<tr>
 				<td
-					style="border:{border};border-top:none;background:{stripeBg};padding:10px 18px;font-weight:700;text-align:center;vertical-align:middle;width:200px;"
+					style="border:{border};border-top:none;background:{stripeBg};padding:10px 18px;font-weight:700;text-align:center;vertical-align:middle;"
 				>
 					お振込先
 				</td>
-				<td style="border:{border};border-top:none;padding:5px;line-height:1.5;">
-					<p style="margin:0;">{invoice.company.bank_name} {invoice.company.bank_branch}{invoice.company.bank_branch_code ? `(${invoice.company.bank_branch_code})` : ''}</p>
-					<p style="margin:0;">{invoice.company.bank_account_type}　{invoice.company.bank_account_name}</p>
-					<p style="margin:0;">口座：{invoice.company.bank_account_number}</p>
+				<td style="border:{border};border-top:none;padding:5px 8px;line-height:1.5;vertical-align:top;">
+					<div style="margin:0;">{invoice.company.bank_name} {invoice.company.bank_branch}{invoice.company.bank_branch_code ? `(${invoice.company.bank_branch_code})` : ''}</div>
+					<div style="margin:0;">{invoice.company.bank_account_type}　{invoice.company.bank_account_name}</div>
+					<div style="margin:0;">口座：{invoice.company.bank_account_number}</div>
 				</td>
 			</tr>
 		</tbody>

@@ -29,6 +29,11 @@
         </header>
 
         <main class="app-main min-h-0 flex-1 overflow-auto">
+            {#if data.useMockData}
+                <div class="border-b border-amber-200 bg-amber-50 px-4 py-2 text-center text-sm text-amber-900">
+                    モックデータモード — 書類確認用のサンプルデータを表示しています（DB未使用）
+                </div>
+            {/if}
             {@render children()}
         </main>
     </div>
